@@ -29,7 +29,7 @@ export default function AdminUsersPage() {
       <h1 className="text-2xl font-bold text-gray-900">Users</h1>
 
       <div className="flex gap-2">
-        {['customer','admin','technician'].map((r) => (
+        {['customer', 'technician'].map((r) => (
           <Button key={r} size="sm" variant={role === r ? 'primary' : 'outline'} onClick={() => { setRole(r); setPage(1); }}>
             {r.charAt(0).toUpperCase() + r.slice(1)}
           </Button>
@@ -41,7 +41,7 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left">
               <tr>
-                {['Name','Email','Mobile','Role','Status','Joined','Actions'].map((h) => (
+                {['Name', 'Email', 'Mobile', 'Role', 'Status', 'Joined', 'Actions'].map((h) => (
                   <th key={h} className="px-4 py-3 font-medium text-gray-500">{h}</th>
                 ))}
               </tr>

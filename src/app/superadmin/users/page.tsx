@@ -19,7 +19,7 @@ const createSchema = z.object({
   mobileNumber: z.string().min(10),
   email: z.string().email(),
   password: z.string().min(8).optional().or(z.literal('')),
-  role: z.enum(['customer','admin','technician','superadmin']),
+  role: z.enum(['customer', 'admin', 'technician', 'superadmin']),
   organizationName: z.string().optional(),
 });
 type CreateForm = z.infer<typeof createSchema>;
@@ -117,7 +117,7 @@ export default function SuperAdminUsersPage() {
           />
         </div>
         <div className="flex gap-1 flex-wrap">
-          {[{value:'',label:'All'},{value:'customer',label:'Customers'},{value:'admin',label:'Admins'},{value:'technician',label:'Technicians'}].map(o => (
+          {[{ value: '', label: 'All' }, { value: 'customer', label: 'Customers' }, { value: 'admin', label: 'Admins' }, { value: 'technician', label: 'Technicians' }].map(o => (
             <Button key={o.value} size="sm" variant={role === o.value ? 'primary' : 'outline'} onClick={() => { setRole(o.value); setPage(1); }}>
               {o.label}
             </Button>
@@ -135,7 +135,7 @@ export default function SuperAdminUsersPage() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left border-b border-slate-100">
                   <tr>
-                    {['Customer ID','Name','Email','Mobile','Organization','Role','Status','Joined','Actions'].map(h => (
+                    {['Customer ID', 'Name', 'Email', 'Mobile', 'Organization', 'Role', 'Status', 'Joined', 'Actions'].map(h => (
                       <th key={h} className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
