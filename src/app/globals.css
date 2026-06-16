@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --navy: #0d1a4b;
+    --gold: #c99f0f;
+  }
+  body {
+    @apply bg-slate-50 text-gray-900 antialiased;
+  }
+  * {
+    @apply border-gray-200;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-800 text-white hover:bg-primary-900 focus:ring-primary-600;
+  }
+  .btn-gold {
+    @apply bg-gold-500 text-white hover:bg-gold-600 focus:ring-gold-400;
+  }
+  .sidebar-active {
+    @apply bg-primary-900 text-gold-400 border-l-4 border-gold-500;
+  }
+  .card-sa {
+    @apply bg-white rounded-xl shadow-card border border-slate-100;
+  }
+}
