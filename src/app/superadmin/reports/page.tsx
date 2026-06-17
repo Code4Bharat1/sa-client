@@ -13,8 +13,6 @@ import toast from 'react-hot-toast';
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function SuperAdminReportsPage() {
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
   const { data: kpiData } = useGetKPIsQuery();
   const { data: techData, isLoading } = useGetTechnicianPerformanceQuery();
   const { accessToken } = useAuth();
@@ -27,7 +25,7 @@ export default function SuperAdminReportsPage() {
 
   const downloadExcel = async () => {
     try {
-      const params = new URLSearchParams({ format: 'xlsx', ...(from && { from }), ...(to && { to }) });
+      const params = new URLSearchParams({ format: 'xlsx' });
       const response = await fetch(`${BASE_URL}/api/reports/tickets?${params}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -66,13 +64,6 @@ export default function SuperAdminReportsPage() {
         <Button variant="gold" onClick={downloadExcel}>
           <Download className="w-4 h-4" /> Export Excel
         </Button>
-      </div>
-
-      {/* Date Filters */}
-      <div className="flex gap-4 flex-wrap items-end">
-        <Input label="From Date" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-44" />
-        <Input label="To Date" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-44" />
-        <Button variant="outline" onClick={() => { setFrom(''); setTo(''); }}>Clear</Button>
       </div>
 
       {/* KPI Summary */}
