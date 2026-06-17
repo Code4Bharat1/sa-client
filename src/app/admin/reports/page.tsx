@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { Download, Star } from 'lucide-react';
 
+import { useAuth } from '@/hooks/useAuth';
+import toast from 'react-hot-toast';
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function AdminReportsPage() {
@@ -14,15 +17,40 @@ export default function AdminReportsPage() {
   const [to, setTo] = useState('');
   const { data: kpiData } = useGetKPIsQuery();
   const { data: techData, isLoading } = useGetTechnicianPerformanceQuery();
+  const { accessToken } = useAuth();
 
   const kpis = kpiData?.data;
   const techs = (techData?.data || []) as Array<{
     name: string; email: string; totalAssigned: number; resolved: number; avgRating?: number; resolutionRate?: number;
   }>;
 
-  const downloadExcel = () => {
-    const params = new URLSearchParams({ format: 'xlsx', ...(from && { from }), ...(to && { to }) });
-    window.open(`${BASE_URL}/api/reports/tickets?${params}`, '_blank');
+  const downloadExcel = async () => {
+    try {
+      const params = new URLSearchParams({ format: 'xlsx', ...(from && { from }), ...(to && { to }) });
+      const response = await fetch(`${BASE_URL}/api/reports/tickets?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download excel');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tickets.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Excel report downloaded successfully');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download Excel report');
+    }
   };
 
   return (
