@@ -23,22 +23,16 @@ const NAV_ITEMS = {
     { label: 'Raise Ticket', href: '/customer/tickets/new', icon: PlusSquare },
   ],
   admin: [
-    { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Overview', href: '/admin/dashboard', icon: Shield },
     { label: 'All Tickets', href: '/admin/tickets', icon: Ticket },
-    { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
     { label: 'Users', href: '/admin/users', icon: Users },
+    { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
+    { label: 'Audit Logs', href: '/admin/audit', icon: FileText },
+    { label: 'Configuration', href: '/admin/config', icon: Settings },
   ],
   technician: [
     { label: 'Dashboard', href: '/technician/dashboard', icon: LayoutDashboard },
     { label: 'My Tickets', href: '/technician/tickets', icon: Wrench },
-  ],
-  superadmin: [
-    { label: 'Overview', href: '/superadmin/dashboard', icon: Shield },
-    { label: 'All Tickets', href: '/superadmin/tickets', icon: Ticket },
-    { label: 'Users', href: '/superadmin/users', icon: Users },
-    { label: 'Reports', href: '/superadmin/reports', icon: BarChart3 },
-    { label: 'Audit Logs', href: '/superadmin/audit', icon: FileText },
-    { label: 'Configuration', href: '/superadmin/config', icon: Settings },
   ],
 };
 
@@ -46,7 +40,6 @@ const ROLE_LABELS: Record<string, string> = {
   customer: 'Customer Portal',
   admin: 'Admin Panel',
   technician: 'Technician Panel',
-  superadmin: 'Super Admin',
 };
 
 export function Sidebar() {
@@ -111,7 +104,7 @@ export function Sidebar() {
         <nav className="flex-1 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden px-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href || pathname.startsWith(item.href + '/');
+            const active = pathname === item.href || (pathname.startsWith(item.href + '/') && !(item.href === '/customer/tickets' && pathname === '/customer/tickets/new'));
             return (
               <Link
                 key={item.href}

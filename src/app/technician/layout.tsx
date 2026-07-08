@@ -10,13 +10,14 @@ import { useEffect } from 'react';
 
 export default function TechnicianLayout({ children }: { children: React.ReactNode }) {
   const open = useSelector((s: RootState) => s.ui.sidebarOpen);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    if (!isInitialized) return;
     if (!isAuthenticated) { router.replace('/login'); return; }
     if (user?.role !== 'technician') router.replace('/login');
-  }, [isAuthenticated, user, router]);
+  }, [isInitialized, isAuthenticated, user, router]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">

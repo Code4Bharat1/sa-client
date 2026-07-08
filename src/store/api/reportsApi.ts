@@ -9,6 +9,7 @@ export const reportsApi = apiSlice.injectEndpoints({
     }),
     getTechnicianPerformance: builder.query<{ success: boolean; data: unknown[] }, void>({
       query: () => '/reports/technician-performance',
+      providesTags: ['KPI'],
     }),
     getTicketReport: builder.query<{ success: boolean; data: unknown[] }, Record<string, string>>({
       query: (params) => ({ url: '/reports/tickets', params }),

@@ -1,4 +1,4 @@
-export type Role = 'customer' | 'admin' | 'technician' | 'superadmin';
+export type Role = 'customer' | 'admin' | 'technician';
 
 export type Priority = 'low' | 'medium' | 'high' | 'critical';
 
@@ -103,8 +103,10 @@ export interface Ticket {
   statusHistory: StatusHistory[];
   assignedTeam?: string;
   assignedTechnician?: User | string;
+  scheduledVisitDate?: string;
   expectedResponseTime?: string;
   expectedResolutionTime?: string;
+  resolutionDeadline?: string;
   assignedAt?: string;
   resolution?: Resolution;
   closedAt?: string;
@@ -144,6 +146,7 @@ export interface AuthState {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
 }
 
 export interface Notification {

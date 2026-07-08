@@ -6,10 +6,11 @@ import { StatusBadge, PriorityBadge } from '@/components/shared/StatusBadge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { CheckCircle, RefreshCw, Star } from 'lucide-react';
-import { StatusHistory } from '@/types';
+import { User, StatusHistory } from '@/types';
 
 export default function CustomerTicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -86,6 +87,7 @@ export default function CustomerTicketDetailPage() {
             ['Panel Serial', ticket.panelSerialNumber],
             ['Created', formatDate(ticket.createdAt)],
             ['Expected Response', formatDate(ticket.expectedResponseTime)],
+            ['Scheduled Visit', ticket.scheduledVisitDate ? formatDate(ticket.scheduledVisitDate) : '—'],
             ['Closed At', formatDate(ticket.closedAt)],
           ].map(([k, v]) => (
             <div key={k}>
@@ -96,8 +98,50 @@ export default function CustomerTicketDetailPage() {
         </dl>
         <div className="mt-4">
           <dt className="text-sm text-gray-500 mb-1">Description</dt>
-          <dd className="text-sm text-gray-800 bg-gray-50 rounded-lg p-3">{ticket.description}</dd>
+          <dd className="text-sm text-gray-800 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">{ticket.description}</dd>
         </div>
+
+        {ticket.attachments && ticket.attachments.length > 0 && (
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <dt className="text-sm font-medium text-gray-700 mb-2">Attachments & Voice Notes</dt>
+            <dd className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {ticket.attachments.map((url, idx) => {
+                const isImage = url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.webp');
+                const isVideo = url.includes('.mp4');
+                const isAudio = url.includes('.webm') || url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('.m4a');
+                
+                return (
+                  <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col justify-between">
+                    <div className="mb-2">
+                      {isImage && (
+                        <a href={url} target="_blank" rel="noreferrer">
+                          <img src={url} alt="Attachment" className="max-h-40 rounded object-contain mx-auto border border-gray-200" />
+                        </a>
+                      )}
+                      {isVideo && (
+                        <video src={url} controls className="max-h-40 w-full rounded border border-gray-200" />
+                      )}
+                      {isAudio && (
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs font-semibold text-gray-500">Voice Note</span>
+                          <audio src={url} controls className="w-full h-8" />
+                        </div>
+                      )}
+                      {!isImage && !isVideo && !isAudio && (
+                        <a href={url} target="_blank" rel="noreferrer" className="text-sm text-primary-600 hover:underline break-all block">
+                          Download File
+                        </a>
+                      )}
+                    </div>
+                    <a href={url} target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-primary-600 transition truncate block">
+                      {(url.split('/').pop() || '').replace(/^\d+-\d+-/, '').replace(/_/g, ' ')}
+                    </a>
+                  </div>
+                );
+              })}
+            </dd>
+          </div>
+        )}
       </Card>
 
       {ticket.resolution && (
@@ -127,16 +171,30 @@ export default function CustomerTicketDetailPage() {
       <Card>
         <h2 className="font-semibold text-gray-900 mb-3">Status Timeline</h2>
         <ol className="relative border-l border-gray-200 space-y-4 ml-2">
-          {ticket.statusHistory.map((h: StatusHistory, i) => (
-            <li key={i} className="ml-4">
-              <div className="absolute -left-1.5 mt-1.5 w-3 h-3 rounded-full bg-primary-500 border-2 border-white" />
-              <div className="flex items-center gap-2">
-                <StatusBadge status={h.status} />
-                <span className="text-xs text-gray-400">{formatDate(h.timestamp)}</span>
-              </div>
-              {h.remarks && <p className="text-xs text-gray-500 mt-1">{h.remarks}</p>}
-            </li>
-          ))}
+          {ticket.statusHistory.map((h: StatusHistory, i) => {
+            const isPriorityUpdate = h.remarks?.toLowerCase().includes('priority');
+            const isDeadlineUpdate = h.remarks?.toLowerCase().includes('deadline');
+
+            return (
+              <li key={i} className="ml-5">
+                <div className="absolute -left-[9px] mt-1 w-4 h-4 rounded-full bg-primary-800 border-2 border-white shadow-sm" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  {isPriorityUpdate ? (
+                    <Badge className="bg-amber-100 text-amber-800">Priority Update</Badge>
+                  ) : isDeadlineUpdate ? (
+                    <Badge className="bg-rose-100 text-rose-800">Deadline Update</Badge>
+                  ) : (
+                    <StatusBadge status={h.status} />
+                  )}
+                  <span className="text-xs text-gray-400">{formatDate(h.timestamp)}</span>
+                  {typeof h.changedBy === 'object' && (
+                    <span className="text-xs text-gray-500">— {(h.changedBy as { name: string; role: string }).name} ({(h.changedBy as { name: string; role: string }).role})</span>
+                  )}
+                </div>
+                {h.remarks && <p className="text-xs text-slate-500 mt-1 ml-0.5">{h.remarks}</p>}
+              </li>
+            );
+          })}
         </ol>
       </Card>
 
@@ -144,10 +202,26 @@ export default function CustomerTicketDetailPage() {
         <Card>
           <h2 className="font-semibold text-gray-900 mb-3">Confirm Resolution</h2>
           <p className="text-sm text-gray-600 mb-4">Is your issue resolved? Please confirm to close the ticket.</p>
-          <div className="flex gap-3">
-            <Button onClick={handleConfirm} loading={confirming}><CheckCircle className="w-4 h-4" /> Yes, Resolved</Button>
-            <Button variant="outline" onClick={() => setShowReopen(true)}><RefreshCw className="w-4 h-4" /> Issue Persists (Reopen)</Button>
-          </div>
+          {!showReopen ? (
+            <div className="flex gap-3">
+              <Button onClick={handleConfirm} loading={confirming}><CheckCircle className="w-4 h-4" /> Yes, Resolved</Button>
+              <Button variant="outline" onClick={() => setShowReopen(true)}><RefreshCw className="w-4 h-4" /> Issue Persists (Reopen)</Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <textarea
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                rows={3}
+                placeholder="Describe why the issue persists and why you are reopening this ticket..."
+                value={reopenReason}
+                onChange={(e) => setReopenReason(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button loading={reopening} onClick={handleReopen}>Submit Reopen</Button>
+                <Button variant="ghost" onClick={() => setShowReopen(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

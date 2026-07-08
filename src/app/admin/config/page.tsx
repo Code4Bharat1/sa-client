@@ -3,11 +3,10 @@ import { useState } from 'react';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import toast from 'react-hot-toast';
 import { Settings, Bell, Clock, RefreshCw, Shield } from 'lucide-react';
 
-export default function SuperAdminConfigPage() {
+export default function AdminConfigPage() {
   const [slaResponse, setSlaResponse] = useState('4');
   const [slaResolution, setSlaResolution] = useState('48');
   const [autoClose, setAutoClose] = useState('3');
@@ -158,7 +157,7 @@ export default function SuperAdminConfigPage() {
         <div className="text-center py-4">
           <p className="text-sm text-slate-500">
             Multi-tenant organization management and feature flags are available in{' '}
-            <strong className="text-primary-800">Phase 6</strong> — Super Admin hardening.
+            <strong className="text-primary-800">Phase 6</strong> — Admin hardening.
           </p>
         </div>
       </Card>

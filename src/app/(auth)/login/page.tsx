@@ -39,7 +39,6 @@ export default function LoginPage() {
       customer: '/customer/dashboard',
       admin: '/admin/dashboard',
       technician: '/technician/dashboard',
-      superadmin: '/superadmin/dashboard',
     };
     router.push(map[role] || '/');
   };

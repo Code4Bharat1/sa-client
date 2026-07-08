@@ -85,11 +85,12 @@ export default function CustomerTicketsPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Total: {data?.total} tickets</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
-              <Button variant="outline" size="sm" disabled={page >= (data?.pages || 1)} onClick={() => setPage(p => p + 1)}>Next</Button>
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-sm text-gray-500">Total: {data?.total || 0} tickets</p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Previous</Button>
+              <span className="text-sm text-gray-600 px-2">Page {page} / {data?.pages || 1}</span>
+              <Button variant="outline" size="sm" disabled={page >= (data?.pages || 1)} onClick={() => setPage(p => p + 1)}>Next →</Button>
             </div>
           </div>
         </>

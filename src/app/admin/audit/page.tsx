@@ -6,13 +6,16 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
-import { FileText, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 const ACTION_COLORS: Record<string, string> = {
-  STATUS_UPDATE:  'bg-blue-100 text-blue-700',
-  ASSIGN:         'bg-purple-100 text-purple-700',
-  CREATE_USER:    'bg-green-100 text-green-700',
-  UPDATE_USER:    'bg-yellow-100 text-yellow-700',
+  STATUS_UPDATE:    'bg-blue-100 text-blue-700',
+  ASSIGN:           'bg-purple-100 text-purple-700',
+  CREATE_USER:      'bg-green-100 text-green-700',
+  UPDATE_USER:      'bg-yellow-100 text-yellow-700',
+  PRIORITY_UPDATE:  'bg-amber-100 text-amber-700',
+  DEADLINE_UPDATE:  'bg-rose-100 text-rose-700',
+  'Technician Visit Scheduled': 'bg-indigo-100 text-indigo-700',
 };
 
 const ENTITY_OPTS = [
@@ -88,11 +91,29 @@ export default function AuditLogsPage() {
                         </td>
                         <td className="px-4 py-3 text-xs font-medium text-slate-700">{log.entity}</td>
                         <td className="px-4 py-3 font-mono text-xs text-slate-600">{log.entityId}</td>
-                        <td className="px-4 py-3 text-xs text-slate-500 max-w-[140px] truncate">
-                          {log.before ? JSON.stringify(log.before) : '—'}
+                        <td className="px-4 py-3 text-xs text-slate-500 max-w-[200px]">
+                          {log.before ? (
+                            <div className="space-y-0.5">
+                              {Object.entries(log.before).map(([key, val]) => (
+                                <div key={key} className="truncate">
+                                  <span className="font-semibold text-slate-400 mr-1">{key}:</span>
+                                  <span>{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : '—'}
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-700 max-w-[140px] truncate">
-                          {log.after ? JSON.stringify(log.after) : '—'}
+                        <td className="px-4 py-3 text-xs text-slate-700 max-w-[200px]">
+                          {log.after ? (
+                            <div className="space-y-0.5">
+                              {Object.entries(log.after).map(([key, val]) => (
+                                <div key={key} className="truncate">
+                                  <span className="font-semibold text-slate-500 mr-1">{key}:</span>
+                                  <span>{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : '—'}
                         </td>
                       </tr>
                     );
