@@ -82,9 +82,18 @@ export function Sidebar() {
           'flex items-center gap-3 px-4 py-4 border-b border-primary-700/50 min-h-[64px]',
           !open && 'lg:justify-center lg:px-2'
         )}>
-          {/* Logo mark - graduation cap placeholder matching brand */}
-          <div className="w-9 h-9 rounded-lg bg-gold-500 flex items-center justify-center flex-shrink-0 font-bold text-primary-900 text-sm select-none">
-            SA
+          {/* Logo mark */}
+          <div className="bg-white p-1.5 rounded-lg flex items-center justify-center flex-shrink-0">
+            <img
+              src="/SAlogo.jpeg"
+              alt="Logo"
+              style={{
+                width: open ? '120px' : '36px',
+                height: 'auto',
+                maxHeight: '36px'
+              }}
+              className="object-contain flex-shrink-0"
+            />
           </div>
           {open && (
             <div className="overflow-hidden">
