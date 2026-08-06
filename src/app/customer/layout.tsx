@@ -16,6 +16,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   useEffect(() => {
     if (!isInitialized) return;
     if (!isAuthenticated) { router.replace('/login'); return; }
+    if (user?.profileComplete === false) { router.replace('/complete-profile'); return; }
     if (user?.role !== 'customer') router.replace('/login');
   }, [isInitialized, isAuthenticated, user, router]);
 

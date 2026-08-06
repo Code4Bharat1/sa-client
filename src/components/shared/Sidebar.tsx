@@ -77,36 +77,29 @@ export function Sidebar() {
           open ? 'w-64' : 'w-0 overflow-hidden lg:w-16'
         )}
       >
-        {/* Logo */}
-        <div className={cn(
-          'flex items-center gap-3 px-4 py-4 border-b border-primary-700/50 min-h-[64px]',
-          !open && 'lg:justify-center lg:px-2'
-        )}>
+        {/* Logo Header (Clickable to toggle sidebar) */}
+        <div
+          onClick={() => dispatch(toggleSidebar())}
+          title={open ? "Click to collapse sidebar" : "Click to expand sidebar"}
+          className={cn(
+            'flex items-center gap-3 px-4 py-4 border-b border-primary-700/50 min-h-[64px] cursor-pointer hover:bg-primary-800/50 transition-colors select-none',
+            !open && 'lg:justify-center lg:px-2'
+          )}
+        >
           {/* Logo mark */}
-          <div className="bg-white p-1.5 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div className="bg-white p-1 rounded-lg flex items-center justify-center flex-shrink-0 w-9 h-9 shadow-sm hover:scale-105 transition-transform">
             <img
-              src="/SAlogo.jpeg"
+              src="/SAlogo.png"
               alt="Logo"
-              style={{
-                width: open ? '120px' : '36px',
-                height: 'auto',
-                maxHeight: '36px'
-              }}
-              className="object-contain flex-shrink-0"
+              className="w-full h-full object-contain"
             />
           </div>
           {open && (
-            <div className="overflow-hidden">
-              <p className="text-white font-bold text-sm leading-tight">Student Alliance</p>
-              <p className="text-gold-400 text-xs font-medium truncate">{ROLE_LABELS[user.role]}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold text-sm leading-tight truncate">Student Alliance</p>
+              <p className="text-gold-400 text-xs font-medium truncate mt-0.5">{ROLE_LABELS[user.role]}</p>
             </div>
           )}
-          <button
-            onClick={() => dispatch(toggleSidebar())}
-            className={cn('ml-auto text-primary-300 hover:text-white p-1 rounded', !open && 'hidden')}
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Navigation */}

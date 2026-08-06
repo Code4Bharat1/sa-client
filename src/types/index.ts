@@ -57,8 +57,10 @@ export interface User {
   customerId: string;
   name: string;
   email: string;
-  mobileNumber: string;
+  mobileNumber?: string;
   role: Role;
+  googleId?: string;
+  profileComplete?: boolean;
   organizationName?: string;
   address?: string;
   city?: string;

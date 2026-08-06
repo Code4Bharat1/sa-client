@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 import { setCredentials } from '@/features/auth/authSlice';
-import { useLoginMutation, useRequestOTPMutation, useVerifyOTPMutation } from '@/store/api/authApi';
+import { useLoginMutation, useRequestOTPMutation, useVerifyOTPMutation, useGoogleLoginMutation } from '@/store/api/authApi';
+import { GoogleLogin } from '@react-oauth/google';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const [login, { isLoading: loginLoading }] = useLoginMutation();
   const [requestOTP, { isLoading: otpReqLoading }] = useRequestOTPMutation();
   const [verifyOTP, { isLoading: otpVerLoading }] = useVerifyOTPMutation();
+  const [googleLogin] = useGoogleLoginMutation();
 
   const loginForm = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
   const otpReqForm = useForm<OTPReqForm>({ resolver: zodResolver(otpReqSchema) });
@@ -48,7 +50,11 @@ export default function LoginPage() {
       const res = await login(data).unwrap();
       dispatch(setCredentials({ user: res.data.user, accessToken: res.data.accessToken }));
       toast.success('Welcome back!');
-      redirectByRole(res.data.user.role);
+      if (res.data.user.profileComplete === false) {
+        router.push('/complete-profile');
+      } else {
+        redirectByRole(res.data.user.role);
+      }
     } catch (err: unknown) {
       toast.error((err as { data?: { message?: string } }).data?.message || 'Login failed');
     }
@@ -70,9 +76,29 @@ export default function LoginPage() {
       const res = await verifyOTP({ identifier: otpIdentifier, code: data.code }).unwrap();
       dispatch(setCredentials({ user: res.data.user, accessToken: res.data.accessToken }));
       toast.success('Welcome back!');
-      redirectByRole(res.data.user.role);
+      if (res.data.user.profileComplete === false) {
+        router.push('/complete-profile');
+      } else {
+        redirectByRole(res.data.user.role);
+      }
     } catch (err: unknown) {
       toast.error((err as { data?: { message?: string } }).data?.message || 'Invalid or expired OTP');
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+    if (!credentialResponse.credential) return;
+    try {
+      const res = await googleLogin({ credential: credentialResponse.credential }).unwrap();
+      dispatch(setCredentials({ user: res.data.user, accessToken: res.data.accessToken }));
+      toast.success('Welcome back!');
+      if (res.data.user.profileComplete === false) {
+        router.push('/complete-profile');
+      } else {
+        redirectByRole(res.data.user.role);
+      }
+    } catch (err: unknown) {
+      toast.error((err as { data?: { message?: string } }).data?.message || 'Google login failed');
     }
   };
 
@@ -129,6 +155,19 @@ export default function LoginPage() {
               <Button type="button" variant="outline" className="w-full hover:shadow-md hover:scale-[1.01] transition-all duration-200" onClick={() => setMode('otp-request')}>
                 Login with OTP
               </Button>
+              <div className="relative flex items-center gap-3 my-2">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-xs text-slate-400">or continue with</span>
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+              <div className="flex justify-center w-full">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => toast.error('Google Sign-In failed')}
+                  shape="rectangular"
+                  width="100%"
+                />
+              </div>
             </form>
           )}
 

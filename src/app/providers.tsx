@@ -6,6 +6,7 @@ import { useSSE } from '@/hooks/useSSE';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthInitializer } from '@/components/shared/AuthInitializer';
 
 function SSEConnector() {
@@ -15,13 +16,17 @@ function SSEConnector() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
   return (
-    <Provider store={store}>
-      <AuthInitializer>
-        <SSEConnector />
-        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-        {children}
-      </AuthInitializer>
-    </Provider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <Provider store={store}>
+        <AuthInitializer>
+          <SSEConnector />
+          <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+          {children}
+        </AuthInitializer>
+      </Provider>
+    </GoogleOAuthProvider>
   );
 }

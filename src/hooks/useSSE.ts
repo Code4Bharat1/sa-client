@@ -13,7 +13,7 @@ export const useSSE = (accessToken: string | null) => {
   useEffect(() => {
     if (!accessToken) return;
 
-    const url = `${BASE_URL}/api/sse/notifications`;
+    const url = `${BASE_URL}/api/sse/notifications?token=${encodeURIComponent(accessToken)}`;
     const es = new EventSource(url, { withCredentials: true });
     esRef.current = es;
 

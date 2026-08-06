@@ -16,6 +16,7 @@ export default function TechnicianLayout({ children }: { children: React.ReactNo
   useEffect(() => {
     if (!isInitialized) return;
     if (!isAuthenticated) { router.replace('/login'); return; }
+    if (user?.profileComplete === false) { router.replace('/complete-profile'); return; }
     if (user?.role !== 'technician') router.replace('/login');
   }, [isInitialized, isAuthenticated, user, router]);
 

@@ -2,7 +2,7 @@
 import { Bell, Menu } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleSidebar } from '@/features/ui/uiSlice';
-import { markAllRead } from '@/features/notifications/notificationsSlice';
+import { markAllRead, clearAllNotifications } from '@/features/notifications/notificationsSlice';
 import { RootState } from '@/store/store';
 import { useState, useRef, useEffect } from 'react';
 
@@ -59,12 +59,22 @@ export function Topbar({ title }: { title?: string }) {
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <span className="font-semibold text-sm text-primary-900">Notifications</span>
               {items.length > 0 && (
-                <button
-                  onClick={() => dispatch(markAllRead())}
-                  className="text-xs text-primary-600 hover:underline"
-                >
-                  Mark all read
-                </button>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => dispatch(markAllRead())}
+                      className="text-xs text-primary-600 hover:underline font-medium"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  <button
+                    onClick={() => dispatch(clearAllNotifications())}
+                    className="text-xs text-red-500 hover:underline font-medium"
+                  >
+                    Clear all
+                  </button>
+                </div>
               )}
             </div>
             {items.length === 0 ? (
@@ -73,9 +83,8 @@ export function Topbar({ title }: { title?: string }) {
               items.slice(0, 20).map((n) => (
                 <div
                   key={n.id}
-                  className={`px-4 py-3 border-b border-slate-50 last:border-0 text-sm transition-colors ${
-                    n.read ? 'text-gray-500 bg-white' : 'text-gray-800 bg-primary-50 font-medium'
-                  }`}
+                  className={`px-4 py-3 border-b border-slate-50 last:border-0 text-sm transition-colors ${n.read ? 'text-gray-500 bg-white' : 'text-gray-800 bg-primary-50 font-medium'
+                    }`}
                 >
                   <p className="leading-snug">{n.message}</p>
                   <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</p>

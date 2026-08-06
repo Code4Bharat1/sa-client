@@ -9,6 +9,12 @@ export const authApi = apiSlice.injectEndpoints({
     login: builder.mutation<{ success: boolean; data: { accessToken: string; user: User } }, { identifier: string; password: string }>({
       query: (body) => ({ url: '/auth/login', method: 'POST', body }),
     }),
+    googleLogin: builder.mutation<{ success: boolean; data: { accessToken: string; user: User } }, { credential: string }>({
+      query: (body) => ({ url: '/auth/google', method: 'POST', body }),
+    }),
+    completeProfile: builder.mutation<{ success: boolean; data: User }, { password?: string; mobileNumber?: string; organizationName?: string; city?: string; state?: string; address?: string; panels?: { serialNumber: string; size: string; installationDate: string }[] }>({
+      query: (body) => ({ url: '/auth/complete-profile', method: 'POST', body }),
+    }),
     requestOTP: builder.mutation<{ success: boolean; message: string }, { identifier: string }>({
       query: (body) => ({ url: '/auth/otp/request', method: 'POST', body }),
     }),
@@ -30,6 +36,8 @@ export const authApi = apiSlice.injectEndpoints({
 export const {
   useRegisterMutation,
   useLoginMutation,
+  useGoogleLoginMutation,
+  useCompleteProfileMutation,
   useRequestOTPMutation,
   useVerifyOTPMutation,
   useRefreshTokenMutation,

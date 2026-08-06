@@ -10,10 +10,10 @@ import { Button } from '@/components/ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
 
 const schema = z.object({
-  name: z.string().min(2),
-  mobileNumber: z.string().min(10),
-  email: z.string().email(),
-  password: z.string().min(8).optional().or(z.literal('')),
+  name: z.string().min(2, 'Name is required'),
+  mobileNumber: z.string().min(10, 'Mobile number must be at least 10 digits'),
+  email: z.string().email('Valid email is required'),
+  password: z.string().min(8, 'Password is required (min 8 characters)'),
   organizationName: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -66,7 +66,7 @@ export default function RegisterPage() {
             <Input label="Full Name *" id="name" {...reg('name')} error={errors.name?.message} />
             <Input label="Mobile Number *" id="mobile" {...reg('mobileNumber')} error={errors.mobileNumber?.message} />
             <Input label="Email *" id="email" type="email" {...reg('email')} error={errors.email?.message} />
-            <Input label="Password (optional for OTP login)" id="password" type="password" {...reg('password')} error={errors.password?.message} />
+            <Input label="Password *" id="password" type="password" {...reg('password')} error={errors.password?.message} />
             <Input label="Organization Name" id="org" {...reg('organizationName')} />
             <Input label="City" id="city" {...reg('city')} />
             <Input label="State" id="state" {...reg('state')} />
