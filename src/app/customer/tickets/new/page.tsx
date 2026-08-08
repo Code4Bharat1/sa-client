@@ -30,6 +30,7 @@ export default function NewTicketPage() {
   const [createTicket, { isLoading }] = useCreateTicketMutation();
 
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [attachmentError, setAttachmentError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordDuration, setRecordDuration] = useState(0);
@@ -99,6 +100,7 @@ export default function NewTicketPage() {
         }
         const url = await uploadFile(file);
         setAttachments((prev) => [...prev, url]);
+        setAttachmentError(false);
         toast.success(`Uploaded "${file.name}"`);
       }
     } catch (err: unknown) {
@@ -128,6 +130,7 @@ export default function NewTicketPage() {
         try {
           const url = await uploadFile(audioBlob, `voice-note-${Date.now()}.webm`);
           setAttachments((prev) => [...prev, url]);
+          setAttachmentError(false);
           toast.success('Voice note recorded and uploaded');
         } catch (err: unknown) {
           toast.error((err as Error).message || 'Failed to upload voice note');
@@ -166,6 +169,12 @@ export default function NewTicketPage() {
   };
 
   const onSubmit = async (data: FormData) => {
+    if (attachments.length === 0) {
+      setAttachmentError(true);
+      toast.error('Please attach at least one media file or record a voice note.');
+      return;
+    }
+    setAttachmentError(false);
     try {
       const payload = {
         ...data,
@@ -233,7 +242,10 @@ export default function NewTicketPage() {
 
           {/* Attachment section */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Attachments & Voice Notes (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700">Attachments & Voice Notes *</label>
+            {attachmentError && (
+              <p className="text-xs text-red-600 font-medium">At least one attachment (photo, video, or voice note) is required.</p>
+            )}
             
             <div className="grid grid-cols-2 gap-4">
               {/* File upload trigger */}

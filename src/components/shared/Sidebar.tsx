@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   LayoutDashboard, Ticket, Users, BarChart3, Settings,
   ClipboardList, Wrench, Shield, LogOut, Menu, X,
-  PlusSquare, FileText,
+  PlusSquare, FileText, MessageSquare,
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleSidebar } from '@/features/ui/uiSlice';
@@ -25,6 +25,7 @@ const NAV_ITEMS = {
   admin: [
     { label: 'Overview', href: '/admin/dashboard', icon: Shield },
     { label: 'All Tickets', href: '/admin/tickets', icon: Ticket },
+    { label: 'Live Support Chat', href: '/admin/chat', icon: MessageSquare },
     { label: 'Users', href: '/admin/users', icon: Users },
     { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
     { label: 'Audit Logs', href: '/admin/audit', icon: FileText },

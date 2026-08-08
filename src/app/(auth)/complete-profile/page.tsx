@@ -28,7 +28,7 @@ const schema = z.object({
         installationDate: z.string().min(1, 'Required'),
       })
     )
-    .optional(),
+    .min(1, 'At least one IFPD panel is required'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -69,7 +69,7 @@ export default function CompleteProfilePage() {
       address: user?.address || '',
       city: user?.city || '',
       state: user?.state || '',
-      panels: user?.panels || [],
+      panels: (user?.panels && user.panels.length > 0) ? user.panels : [{ serialNumber: '', size: '', installationDate: '' }],
     },
   });
 
@@ -139,8 +139,8 @@ export default function CompleteProfilePage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-gray-700">IFPD Panels (Optional)</h3>
-                <p className="text-xs text-gray-400">Add any registered panel details now or add them later.</p>
+                <h3 className="text-sm font-semibold text-gray-700">IFPD Panels *</h3>
+                <p className="text-xs text-gray-400">Add at least one registered panel to continue.</p>
               </div>
               <Button
                 type="button"
@@ -151,15 +151,23 @@ export default function CompleteProfilePage() {
                 <Plus className="w-4 h-4" /> Add Panel
               </Button>
             </div>
+            {errors.panels?.root?.message && (
+              <p className="text-xs text-red-500 mb-2">{errors.panels.root.message}</p>
+            )}
+            {typeof errors.panels?.message === 'string' && (
+              <p className="text-xs text-red-500 mb-2">{errors.panels.message}</p>
+            )}
             {fields.map((field, i) => (
               <div key={field.id} className="border border-gray-200 rounded-lg p-4 mb-3 relative bg-slate-50/50">
-                <button
-                  type="button"
-                  onClick={() => remove(i)}
-                  className="absolute top-2 right-2 text-red-400 hover:text-red-600 p-1"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {fields.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => remove(i)}
+                    className="absolute top-2 right-2 text-red-400 hover:text-red-600 p-1"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <Input
                     label="Serial Number"

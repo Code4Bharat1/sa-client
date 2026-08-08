@@ -12,6 +12,8 @@ import toast from 'react-hot-toast';
 import { CheckCircle, RefreshCw, Star } from 'lucide-react';
 import { User, StatusHistory } from '@/types';
 
+import { TicketChat } from '@/components/tickets/TicketChat';
+
 export default function CustomerTicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>();
   const { data, isLoading, refetch } = useGetTicketQuery(ticketId);
@@ -143,6 +145,9 @@ export default function CustomerTicketDetailPage() {
           </div>
         )}
       </Card>
+
+      {/* Ticket Chat Discussion */}
+      <TicketChat ticketId={ticket.ticketId} ticketStatus={ticket.status} />
 
       {ticket.resolution && (
         <Card>

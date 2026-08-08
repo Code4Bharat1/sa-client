@@ -15,7 +15,8 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { User, StatusHistory } from '@/types';
-import { Shield } from 'lucide-react';
+import { Shield, MessageSquare, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   'Open': ['Under Review', 'Assigned'],
@@ -239,6 +240,27 @@ export default function AdminTicketDetailPage() {
           </div>
         </Card>
       )}
+
+      {/* Live Customer Discussion Shortcut */}
+      <Card className="flex items-center justify-between p-4 bg-gradient-to-r from-primary-50/70 to-indigo-50/70 border-primary-100/80 shadow-sm flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-primary-600 text-white rounded-xl shadow-sm">
+            <MessageSquare className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm text-gray-900">Live Customer Discussion</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Direct support chat console with customer for ticket <span className="font-mono font-medium text-primary-700">#{ticket.ticketId}</span>
+            </p>
+          </div>
+        </div>
+        <Link
+          href={`/admin/chat?ticketId=${ticket.ticketId}`}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-sm transition"
+        >
+          Open Live Support Chat <ExternalLink className="w-3.5 h-3.5" />
+        </Link>
+      </Card>
 
       {/* Interactive Admin Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

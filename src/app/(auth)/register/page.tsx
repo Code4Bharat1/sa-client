@@ -22,7 +22,7 @@ const schema = z.object({
     serialNumber: z.string().min(1, 'Required'),
     size: z.string().min(1, 'Required'),
     installationDate: z.string().min(1, 'Required'),
-  })).optional(),
+  })).min(1, 'At least one IFPD panel is required'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -32,7 +32,7 @@ export default function RegisterPage() {
   const [register, { isLoading }] = useRegisterMutation();
   const { register: reg, handleSubmit, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { panels: [] },
+    defaultValues: { panels: [{ serialNumber: '', size: '', installationDate: '' }] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'panels' });
 
@@ -75,16 +75,27 @@ export default function RegisterPage() {
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700">IFPD Panels</h3>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700">IFPD Panels *</h3>
+                <p className="text-xs text-gray-400">At least one panel is required.</p>
+              </div>
               <Button type="button" variant="outline" size="sm" onClick={() => append({ serialNumber: '', size: '', installationDate: '' })}>
                 <Plus className="w-4 h-4" /> Add Panel
               </Button>
             </div>
+            {errors.panels?.root?.message && (
+              <p className="text-xs text-red-500 mb-2">{errors.panels.root.message}</p>
+            )}
+            {typeof errors.panels?.message === 'string' && (
+              <p className="text-xs text-red-500 mb-2">{errors.panels.message}</p>
+            )}
             {fields.map((field, i) => (
               <div key={field.id} className="border border-gray-200 rounded-lg p-4 mb-3 relative">
-                <button type="button" onClick={() => remove(i)} className="absolute top-2 right-2 text-red-400 hover:text-red-600">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {fields.length > 1 && (
+                  <button type="button" onClick={() => remove(i)} className="absolute top-2 right-2 text-red-400 hover:text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <Input label="Serial Number" {...reg(`panels.${i}.serialNumber`)} error={errors.panels?.[i]?.serialNumber?.message} />
                   <Input label="Panel Size" {...reg(`panels.${i}.size`)} placeholder='e.g. 75"' error={errors.panels?.[i]?.size?.message} />
