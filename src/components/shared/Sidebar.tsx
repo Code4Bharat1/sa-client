@@ -106,7 +106,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden px-2">
+        <nav className="flex-1 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || (pathname.startsWith(item.href + '/') && !(item.href === '/customer/tickets' && pathname === '/customer/tickets/new'));
