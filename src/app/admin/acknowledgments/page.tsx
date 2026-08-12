@@ -5,7 +5,7 @@ import { Card, CardTitle } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { formatDate } from '@/lib/utils';
-import { FileCheck, Search, Shield, Building, User, Mail, Calendar, Eye } from 'lucide-react';
+import { FileCheck, Search, Shield, Building, User, Mail, Calendar, Eye, ImageIcon } from 'lucide-react';
 
 export default function AdminAcknowledgmentsPage() {
   const { data, isLoading } = useGetAcknowledgmentsQuery();
@@ -186,6 +186,17 @@ export default function AdminAcknowledgmentsPage() {
                 </dd>
               </div>
             </dl>
+
+            {selectedAck.trainingImage && (
+              <div>
+                <p className="text-xs font-semibold uppercase text-slate-500 mb-1 flex items-center gap-1">
+                  <ImageIcon className="w-3.5 h-3.5 text-indigo-600" /> Training Session Photo
+                </p>
+                <div className="p-4 bg-slate-900 border border-slate-700 rounded-xl flex justify-center shadow-inner">
+                  <img src={selectedAck.trainingImage} alt="Training Session Photo" className="max-h-52 object-contain rounded-lg" />
+                </div>
+              </div>
+            )}
 
             <div>
               <p className="text-xs font-semibold uppercase text-slate-500 mb-1">Client Digital Signature Proof</p>

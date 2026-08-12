@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import { FileCheck, Mail, Building, User, Users, CheckCircle, Search } from 'lucide-react';
+import { FileCheck, Mail, Building, User, Users, CheckCircle, Search, Camera, Trash2, ImageIcon, Eye } from 'lucide-react';
 
 export default function TechnicianAcknowledgmentsPage() {
   const { data, isLoading, refetch } = useGetAcknowledgmentsQuery();
@@ -19,6 +19,7 @@ export default function TechnicianAcknowledgmentsPage() {
   const [traineeNames, setTraineeNames] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
+  const [trainingImage, setTrainingImage] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedAck, setSelectedAck] = useState<any | null>(null);
 
@@ -32,6 +33,7 @@ export default function TechnicianAcknowledgmentsPage() {
     if (!clientEmail.trim()) { toast.error('Client Email is required'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(clientEmail.trim())) { toast.error('Please enter a valid email address'); return; }
+    if (!trainingImage) { toast.error('Please upload a training session photo'); return; }
     if (!signatureImage) { toast.error('Please capture digital signature on the pad'); return; }
 
     try {
@@ -42,6 +44,7 @@ export default function TechnicianAcknowledgmentsPage() {
         traineeNames: traineeNames.trim(),
         clientEmail: clientEmail.trim(),
         signatureImage,
+        trainingImage,
       }).unwrap();
 
       toast.success('Training Acknowledgment submitted! Email sent to client.');
@@ -51,6 +54,7 @@ export default function TechnicianAcknowledgmentsPage() {
       setTraineeNames('');
       setClientEmail('');
       setSignatureImage(null);
+      setTrainingImage(null);
       refetch();
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to submit training acknowledgment');
@@ -167,6 +171,73 @@ export default function TechnicianAcknowledgmentsPage() {
               />
             </div>
 
+            {/* Mandatory Training Photo Upload Field */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                Training Session Photo *
+              </label>
+              {trainingImage ? (
+                <div className="flex justify-center w-full">
+                  <div className="inline-flex flex-col sm:flex-row items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-xl shadow-sm max-w-full">
+                    <div className="relative rounded-lg overflow-hidden bg-slate-900 border border-slate-700 p-1 flex-shrink-0">
+                      <img
+                        src={trainingImage}
+                        alt="Training Session Preview"
+                        className="h-32 sm:h-36 max-w-xs object-contain rounded"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2 items-start">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                        <CheckCircle className="w-3.5 h-3.5" /> Photo Attached Successfully
+                      </div>
+                      <p className="text-xs text-slate-500">Ready for training completion record.</p>
+                      <button
+                        type="button"
+                        onClick={() => setTrainingImage(null)}
+                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remove / Change Photo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <label className="border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 hover:bg-indigo-50/50 rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
+                  <div className="p-3 bg-white group-hover:bg-indigo-600 group-hover:text-white rounded-full shadow-sm text-indigo-600 mb-2 transition-colors">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">
+                    Upload Training Session Photo *
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Click to choose image file (JPG, PNG, or WEBP)</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (!file.type.startsWith('image/')) {
+                          toast.error('Only image files (JPG, PNG, WEBP) are allowed');
+                          return;
+                        }
+                        if (file.size > 8 * 1024 * 1024) {
+                          toast.error('Photo size must be less than 8MB');
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setTrainingImage(reader.result as string);
+                          toast.success('Training photo attached successfully');
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+
             {/* Signature Canvas */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Client Digital Signature *</label>
@@ -209,7 +280,7 @@ export default function TechnicianAcknowledgmentsPage() {
                   <th className="px-4 py-3">Client Email</th>
                   <th className="px-4 py-3">Trainers</th>
                   <th className="px-4 py-3">Submitted At</th>
-                  <th className="px-4 py-3 text-right">Signature</th>
+                  <th className="px-4 py-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -221,9 +292,17 @@ export default function TechnicianAcknowledgmentsPage() {
                     <td className="px-4 py-3">{ack.trainersPresentCount}</td>
                     <td className="px-4 py-3 text-slate-500">{formatDate(ack.createdAt)}</td>
                     <td className="px-4 py-3 text-right">
-                      <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
-                        Captured
-                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAck(ack);
+                        }}
+                        className="h-7 text-xs inline-flex items-center gap-1"
+                      >
+                        <Eye className="w-3 h-3 text-indigo-600" /> View
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -249,8 +328,20 @@ export default function TechnicianAcknowledgmentsPage() {
               <div className="col-span-2"><dt className="text-xs text-slate-500 uppercase">Trainees</dt><dd className="bg-slate-50 p-2 rounded text-xs text-slate-700 mt-1">{selectedAck.traineeNames}</dd></div>
               <div className="col-span-2"><dt className="text-xs text-slate-500 uppercase">Submitted At</dt><dd className="text-xs">{formatDate(selectedAck.createdAt)}</dd></div>
             </dl>
+
+            {selectedAck.trainingImage && (
+              <div>
+                <p className="text-xs font-semibold uppercase text-slate-500 mb-1 flex items-center gap-1">
+                  <ImageIcon className="w-3.5 h-3.5 text-indigo-600" /> Training Session Photo
+                </p>
+                <div className="p-3 bg-slate-900 border border-slate-700 rounded-lg flex justify-center shadow-inner">
+                  <img src={selectedAck.trainingImage} alt="Training Session Photo" className="max-h-48 object-contain rounded-md" />
+                </div>
+              </div>
+            )}
+
             <div>
-              <p className="text-xs font-semibold uppercase text-slate-500 mb-1">Digital Signature</p>
+              <p className="text-xs font-semibold uppercase text-slate-500 mb-1">Digital Signature Proof</p>
               <div className="p-3 bg-slate-900 border border-slate-700 rounded-lg flex justify-center shadow-inner">
                 <img src={selectedAck.signatureImage} alt="Digital Signature" className="max-h-32 object-contain" />
               </div>
