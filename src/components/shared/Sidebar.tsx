@@ -36,7 +36,6 @@ const NAV_ITEMS = {
   technician: [
     { label: 'Dashboard', href: '/technician/dashboard', icon: LayoutDashboard },
     { label: 'My Tickets', href: '/technician/tickets', icon: Wrench },
-    { label: 'Training Acknowledgment', href: '/technician/acknowledgments', icon: FileCheck },
   ],
 };
 

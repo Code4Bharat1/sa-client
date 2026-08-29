@@ -15,12 +15,12 @@ export function SignatureCanvas({ value, onSignatureChange, height = 180 }: Sign
   const [isDrawing, setIsDrawing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
 
-  // Initialize canvas context style
+  // Initialize canvas context style (Sharp Midnight Blue document ink)
   const applyContextStyle = useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#ffffff'; // White signature ink
+    ctx.strokeStyle = '#0D1A4B'; // Sharp dark blue/navy ink for high contrast
   }, []);
 
   const notifyChange = useCallback((emptyState: boolean) => {
@@ -53,6 +53,7 @@ export function SignatureCanvas({ value, onSignatureChange, height = 180 }: Sign
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    applyContextStyle(ctx);
     ctx.lineTo(x, y);
     ctx.stroke();
     if (isEmpty) {
@@ -160,7 +161,7 @@ export function SignatureCanvas({ value, onSignatureChange, height = 180 }: Sign
     <div className="space-y-2">
       <div
         ref={containerRef}
-        className="relative border-2 border-dashed border-slate-700 rounded-xl bg-slate-900 overflow-hidden shadow-inner cursor-crosshair touch-none"
+        className="relative border-2 border-dashed border-slate-300 hover:border-slate-400 rounded-xl bg-white overflow-hidden shadow-inner cursor-crosshair touch-none"
         style={{ touchAction: 'none' }}
       >
         <canvas
@@ -172,17 +173,20 @@ export function SignatureCanvas({ value, onSignatureChange, height = 180 }: Sign
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={stopDrawing}
-          className="w-full block touch-none"
+          className="w-full block touch-none bg-white"
           style={{ touchAction: 'none' }}
         />
         {isEmpty && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-xs sm:text-sm font-medium px-4 text-center">
-            Sign here using finger (touch) or mouse
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-slate-400 text-xs sm:text-sm font-medium px-4 text-center select-none">
+            <span className="text-slate-600 font-semibold mb-0.5">✍️ Draw client digital signature</span>
+            <span className="text-[11px] text-slate-400">Sign using finger (touch) or mouse</span>
           </div>
         )}
       </div>
       <div className="flex justify-between items-center text-xs text-slate-500 px-1">
-        <span>{isEmpty ? 'Signature required' : 'Signature captured'}</span>
+        <span className={isEmpty ? 'text-slate-400' : 'text-emerald-600 font-medium flex items-center gap-1'}>
+          {isEmpty ? 'Signature required' : '✓ Signature captured'}
+        </span>
         <Button
           type="button"
           variant="outline"

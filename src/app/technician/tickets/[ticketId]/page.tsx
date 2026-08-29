@@ -116,16 +116,16 @@ export default function TechnicianTicketDetailPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Page Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-2 border-b border-slate-200/60">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Shield className="w-4 h-4 text-indigo-500" />
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Technician View</span>
           </div>
-          <h1 className="text-2xl font-bold font-mono text-gray-900">{ticket.ticketId}</h1>
-          <p className="text-sm text-gray-500 mt-1">{ticket.issueCategory} · {ticket.panelSerialNumber}</p>
+          <h1 className="text-xl sm:text-2xl font-bold font-mono text-gray-900 tracking-tight whitespace-nowrap">{ticket.ticketId}</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">{ticket.issueCategory} · {ticket.panelSerialNumber}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={ticket.status} />
           <PriorityBadge priority={ticket.priority} />
         </div>
@@ -181,9 +181,10 @@ export default function TechnicianTicketDetailPage() {
           </CardTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ticket.attachments.map((url, idx) => {
-              const isImage = url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.webp');
-              const isVideo = url.includes('.mp4');
-              const isAudio = url.includes('.webm') || url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('.m4a');
+              const lowerUrl = url.toLowerCase();
+              const isImage = /\.(jpe?g|png|webp|gif|svg|bmp|jfif)($|\?)/i.test(url) || lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp');
+              const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.includes('.webm');
+              const isAudio = lowerUrl.includes('.webm') || lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.ogg') || lowerUrl.includes('.m4a');
               
               return (
                 <div key={idx} className="border border-slate-100 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between shadow-sm hover:shadow transition">

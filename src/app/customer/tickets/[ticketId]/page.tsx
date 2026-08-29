@@ -71,12 +71,12 @@ export default function CustomerTicketDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-2 border-b border-slate-200/60">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 font-mono">{ticket.ticketId}</h1>
-          <p className="text-gray-500 text-sm mt-1">{ticket.issueCategory}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-mono tracking-tight whitespace-nowrap">{ticket.ticketId}</h1>
+          <p className="text-gray-500 text-xs sm:text-sm mt-1">{ticket.issueCategory}</p>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={ticket.status} />
           <PriorityBadge priority={ticket.priority} />
         </div>
@@ -108,9 +108,10 @@ export default function CustomerTicketDetailPage() {
             <dt className="text-sm font-medium text-gray-700 mb-2">Attachments & Voice Notes</dt>
             <dd className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {ticket.attachments.map((url, idx) => {
-                const isImage = url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.webp');
-                const isVideo = url.includes('.mp4');
-                const isAudio = url.includes('.webm') || url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('.m4a');
+                const lowerUrl = url.toLowerCase();
+                const isImage = /\.(jpe?g|png|webp|gif|svg|bmp|jfif)($|\?)/i.test(url) || lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp');
+                const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.includes('.webm');
+                const isAudio = lowerUrl.includes('.webm') || lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.ogg') || lowerUrl.includes('.m4a');
                 
                 return (
                   <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col justify-between">

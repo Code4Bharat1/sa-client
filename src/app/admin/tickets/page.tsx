@@ -5,9 +5,10 @@ import { StatusBadge, PriorityBadge } from '@/components/shared/StatusBadge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { AdminCreateTicketModal } from '@/components/admin/AdminCreateTicketModal';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
-import { Search, AlertTriangle } from 'lucide-react';
+import { Search, AlertTriangle, Plus } from 'lucide-react';
 
 const STATUS_OPTS = [
   { value: '', label: 'All Statuses' },
@@ -25,13 +26,29 @@ export default function AdminTicketsPage() {
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [page, setPage] = useState(1);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const { data, isLoading } = useGetTicketsQuery({ search, status, priority, page, limit: 25 });
+  const { data, isLoading, refetch } = useGetTicketsQuery({ search, status, priority, page, limit: 25 });
   const tickets = data?.tickets || [];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-primary-900">All Tickets</h1>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <h1 className="text-2xl font-bold text-primary-900">All Tickets</h1>
+        <Button
+          onClick={() => setIsCreateOpen(true)}
+          className="flex items-center gap-2 shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Create Ticket
+        </Button>
+      </div>
+
+      <AdminCreateTicketModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreated={() => refetch()}
+      />
 
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-52">

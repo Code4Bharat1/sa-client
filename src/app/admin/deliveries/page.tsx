@@ -19,7 +19,6 @@ import {
   Truck,
   User,
   Mail,
-  Phone,
   MapPin,
   Package,
   Calendar,
@@ -30,7 +29,6 @@ import {
   ExternalLink,
   Trash2,
   Eye,
-  PlusCircle,
   Shield,
   RefreshCw,
   X,
@@ -47,11 +45,43 @@ const STATUS_COLORS: Record<DeliveryStatus, { bg: string; text: string; border: 
   Cancelled: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const isValidMobile = (phone: string): boolean => {
+  const digits = phone.replace(/\D/g, '');
+  return digits.length === 10 || (digits.length === 11 && digits.startsWith('0')) || (digits.length === 12 && digits.startsWith('91'));
+};
+
+interface FormFieldProps {
+  label: string;
+  required?: boolean;
+  error?: string;
+  hint?: string;
+  children: React.ReactNode;
+}
+
+function FormField({ label, required, error, hint, children }: FormFieldProps) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-slate-700 mb-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      {children}
+      {error ? (
+        <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" /> {error}
+        </p>
+      ) : hint ? (
+        <p className="text-[11px] text-slate-400 mt-1">{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AdminDeliveriesPage() {
   const formRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [isFormOpen, setIsFormOpen] = useState(true);
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryItem | null>(null);
 
   // Edit Mode State
@@ -93,6 +123,12 @@ export default function AdminDeliveriesPage() {
   const deliveredCount = deliveries.filter((d) => d.status === 'Delivered').length;
   const scheduledCount = deliveries.filter((d) => d.status === 'Scheduled').length;
 
+  const clearFieldError = (fieldName: string) => {
+    if (fieldErrors[fieldName]) {
+      setFieldErrors((prev) => ({ ...prev, [fieldName]: '' }));
+    }
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setCustomerName('');
@@ -125,7 +161,6 @@ export default function AdminDeliveriesPage() {
     setEstimateTime(delivery.estimateTime);
     setStatus(delivery.status);
     setFieldErrors({});
-    setIsFormOpen(true);
 
     setTimeout(() => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -139,41 +174,23 @@ export default function AdminDeliveriesPage() {
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{7,15}$/;
 
     // Section 1: Customer Details
-    if (!customerName.trim()) {
+    if (!customerName.trim() || customerName.trim().length < 2) {
       errors.customerName = 'Customer name is required (min 2 characters)';
-    } else if (customerName.trim().length < 2) {
-      errors.customerName = 'Customer name must be at least 2 characters';
     }
 
-    if (!customerEmail.trim()) {
-      errors.customerEmail = 'Customer email is required';
-    } else if (!emailRegex.test(customerEmail.trim())) {
+    if (!customerEmail.trim() || !EMAIL_REGEX.test(customerEmail.trim())) {
       errors.customerEmail = 'Invalid email address format (e.g. user@example.com)';
     }
 
-    const isValidMobile = (phone: string): boolean => {
-      const digits = phone.replace(/\D/g, '');
-      if (digits.length === 10) return true;
-      if (digits.length === 11 && digits.startsWith('0')) return true;
-      if (digits.length === 12 && digits.startsWith('91')) return true;
-      return false;
-    };
-
-    if (!customerPhone.trim()) {
-      errors.customerPhone = 'Customer phone number is required';
-    } else if (!isValidMobile(customerPhone.trim())) {
+    if (!customerPhone.trim() || !isValidMobile(customerPhone.trim())) {
       errors.customerPhone = 'Enter a valid 10-digit mobile number (e.g. 9876543210 or +91 9876543210)';
     }
 
     // Section 2: Address & Google Map
-    if (!address.trim()) {
+    if (!address.trim() || address.trim().length < 5) {
       errors.address = 'Full delivery address is required (min 5 characters)';
-    } else if (address.trim().length < 5) {
-      errors.address = 'Address must be at least 5 characters';
     }
 
     if (googleMapLink.trim()) {
@@ -185,28 +202,20 @@ export default function AdminDeliveriesPage() {
     }
 
     // Section 3: Product Details
-    if (!productName.trim()) {
-      errors.productName = 'Product name is required (min 2 characters)';
-    } else if (productName.trim().length < 2) {
+    if (!productName.trim() || productName.trim().length < 2) {
       errors.productName = 'Product name must be at least 2 characters';
     }
 
     // Section 4: Delivery Agent & Schedule
-    if (!deliveryAgentName.trim()) {
+    if (!deliveryAgentName.trim() || deliveryAgentName.trim().length < 2) {
       errors.deliveryAgentName = 'Delivery agent name is required';
-    } else if (deliveryAgentName.trim().length < 2) {
-      errors.deliveryAgentName = 'Agent name must be at least 2 characters';
     }
 
-    if (!deliveryAgentPhone.trim()) {
-      errors.deliveryAgentPhone = 'Delivery agent phone number is required';
-    } else if (!isValidMobile(deliveryAgentPhone.trim())) {
+    if (!deliveryAgentPhone.trim() || !isValidMobile(deliveryAgentPhone.trim())) {
       errors.deliveryAgentPhone = 'Enter a valid 10-digit mobile number (e.g. 9876543210 or +91 9876543210)';
     }
 
-    if (!deliveryAgentEmail.trim()) {
-      errors.deliveryAgentEmail = 'Delivery agent email is required';
-    } else if (!emailRegex.test(deliveryAgentEmail.trim())) {
+    if (!deliveryAgentEmail.trim() || !EMAIL_REGEX.test(deliveryAgentEmail.trim())) {
       errors.deliveryAgentEmail = 'Invalid agent email format (e.g. agent@nexcore.com)';
     }
 
@@ -232,9 +241,7 @@ export default function AdminDeliveriesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     const payload = {
       customerName: customerName.trim(),
@@ -301,42 +308,24 @@ export default function AdminDeliveriesPage() {
     }
   };
 
+  const getInputClass = (hasError: boolean) =>
+    `w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+      hasError
+        ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
+        : 'border-slate-300 focus:ring-emerald-500'
+    }`;
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="w-4 h-4 text-indigo-500" />
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Admin Portal</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 font-mono flex items-center gap-2">
-            <Truck className="w-6 h-6 text-primary-600" /> Delivery Form & WhatsApp Dispatch
-          </h1>
-          <p className="text-sm text-slate-500">
-            Create and edit delivery orders, assign agents, and automatically dispatch real-time WhatsApp updates via <span className="font-mono font-semibold text-emerald-600">whatsapp-web.js</span>.
-          </p>
+      <div className="border-b border-slate-200 pb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Shield className="w-4 h-4 text-indigo-500" />
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Admin Portal</span>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="flex items-center gap-1.5 text-xs"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              if (editingId) resetForm();
-              setIsFormOpen(!isFormOpen);
-            }}
-            className="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            <PlusCircle className="w-4 h-4" /> {isFormOpen && !editingId ? 'Collapse Form' : 'New Delivery Form'}
-          </Button>
-        </div>
+        <h1 className="text-2xl font-bold text-slate-900 font-mono flex items-center gap-2">
+          <Truck className="w-6 h-6 text-primary-600" /> Delivery Form
+        </h1>
       </div>
 
       {/* KPI Cards */}
@@ -383,424 +372,290 @@ export default function AdminDeliveriesPage() {
       </div>
 
       {/* SECTION: Delivery Creation & Edit Form */}
-      {isFormOpen && (
-        <div ref={formRef}>
-          <Card className={`border shadow-md bg-white overflow-hidden transition-all duration-200 ${editingId ? 'border-amber-400 ring-2 ring-amber-200' : 'border-slate-200/80'}`}>
-            <div className={`px-6 py-4 flex items-center justify-between text-white ${editingId ? 'bg-amber-900' : 'bg-slate-900'}`}>
-              <div className="flex items-center gap-2.5">
-                {editingId ? (
-                  <Pencil className="w-5 h-5 text-amber-300" />
-                ) : (
-                  <MessageCircle className="w-5 h-5 text-emerald-400" />
-                )}
-                <div>
-                  <h2 className="text-base font-semibold text-white">
-                    {editingId ? `Edit Delivery Record` : 'Create New Delivery Order'}
-                  </h2>
-                  {editingId && (
-                    <p className="text-xs text-amber-200">
-                      Modifying delivery for: <span className="font-bold underline">{customerName || 'Customer'}</span> ({productName || 'Product'})
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {editingId ? (
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="text-xs bg-amber-800 hover:bg-amber-700 text-amber-100 px-2.5 py-1 rounded border border-amber-600 flex items-center gap-1"
-                  >
-                    <X className="w-3.5 h-3.5" /> Cancel Edit
-                  </button>
-                ) : (
-                  <span className="text-xs bg-emerald-950 text-emerald-300 px-3 py-1 rounded-full border border-emerald-800 flex items-center gap-1.5 font-medium">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    WhatsApp Web Dispatch Active
-                  </span>
+      <div ref={formRef}>
+        <Card className={`border shadow-md bg-white overflow-hidden transition-all duration-200 ${editingId ? 'border-amber-400 ring-2 ring-amber-200' : 'border-slate-200/80'}`}>
+          <div className={`px-6 py-4 flex items-center justify-between text-white ${editingId ? 'bg-amber-900' : 'bg-slate-900'}`}>
+            <div className="flex items-center gap-2.5">
+              {editingId ? (
+                <Pencil className="w-5 h-5 text-amber-300" />
+              ) : (
+                <MessageCircle className="w-5 h-5 text-emerald-400" />
+              )}
+              <div>
+                <h2 className="text-base font-semibold text-white">
+                  {editingId ? 'Edit Delivery Record' : 'Create New Delivery Order'}
+                </h2>
+                {editingId && (
+                  <p className="text-xs text-amber-200">
+                    Modifying delivery for: <span className="font-bold underline">{customerName || 'Customer'}</span> ({productName || 'Product'})
+                  </p>
                 )}
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6">
-              {/* Section 1: Customer Info */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <User className="w-4 h-4 text-emerald-600" />
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Section 1: Customer Details</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Customer Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. John Doe / City Hospital"
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.customerName
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={customerName}
-                      onChange={(e) => {
-                        setCustomerName(e.target.value);
-                        if (fieldErrors.customerName) setFieldErrors({ ...fieldErrors, customerName: '' });
-                      }}
-                    />
-                    {fieldErrors.customerName && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.customerName}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Customer Email <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="customer@example.com"
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.customerEmail
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={customerEmail}
-                      onChange={(e) => {
-                        setCustomerEmail(e.target.value);
-                        if (fieldErrors.customerEmail) setFieldErrors({ ...fieldErrors, customerEmail: '' });
-                      }}
-                    />
-                    {fieldErrors.customerEmail && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.customerEmail}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Customer Phone No (WhatsApp) <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="e.g. +91 9876543210"
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.customerPhone
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={customerPhone}
-                      onChange={(e) => {
-                        setCustomerPhone(e.target.value);
-                        if (fieldErrors.customerPhone) setFieldErrors({ ...fieldErrors, customerPhone: '' });
-                      }}
-                    />
-                    {fieldErrors.customerPhone && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.customerPhone}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="text-xs bg-amber-800 hover:bg-amber-700 text-amber-100 px-2.5 py-1 rounded border border-amber-600 flex items-center gap-1 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" /> Cancel Edit
+              </button>
+            )}
+          </div>
 
-              {/* Section 2: Address & Google Map */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Section 2: Delivery Address</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Full Delivery Address <span className="text-rose-500">*</span>
-                    </label>
-                    <textarea
-                      required
-                      rows={2}
-                      placeholder="Door/Building No, Street Name, Area, City, State, Pincode"
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.address
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={address}
-                      onChange={(e) => {
-                        setAddress(e.target.value);
-                        if (fieldErrors.address) setFieldErrors({ ...fieldErrors, address: '' });
-                      }}
-                    />
-                    {fieldErrors.address && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.address}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Google Map Link (Optional)
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://maps.google.com/?q=..."
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.googleMapLink
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={googleMapLink}
-                      onChange={(e) => {
-                        setGoogleMapLink(e.target.value);
-                        if (fieldErrors.googleMapLink) setFieldErrors({ ...fieldErrors, googleMapLink: '' });
-                      }}
-                    />
-                    {fieldErrors.googleMapLink ? (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.googleMapLink}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Included in WhatsApp messages as a 1-click navigation pin for agent and customer.
-                      </p>
-                    )}
-                  </div>
-                </div>
+          <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6">
+            {/* Section 1: Customer Info */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <User className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Section 1: Customer Details</h3>
               </div>
-
-              {/* Section 3: Product Info */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <Package className="w-4 h-4 text-emerald-600" />
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Section 3: Product Details</h3>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Product Name <span className="text-rose-500">*</span>
-                  </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField label="Customer Name" required error={fieldErrors.customerName}>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. NexCore Interactive Flat Panel 75-inch / Analyzer Kit"
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                      fieldErrors.productName
-                        ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                        : 'border-slate-300 focus:ring-emerald-500'
-                    }`}
-                    value={productName}
+                    placeholder="e.g. John Doe / City Hospital"
+                    className={getInputClass(!!fieldErrors.customerName)}
+                    value={customerName}
                     onChange={(e) => {
-                      setProductName(e.target.value);
-                      if (fieldErrors.productName) setFieldErrors({ ...fieldErrors, productName: '' });
+                      setCustomerName(e.target.value);
+                      clearFieldError('customerName');
                     }}
                   />
-                  {fieldErrors.productName && (
-                    <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> {fieldErrors.productName}
-                    </p>
-                  )}
-                </div>
+                </FormField>
+
+                <FormField label="Customer Email" required error={fieldErrors.customerEmail}>
+                  <input
+                    type="email"
+                    required
+                    placeholder="customer@example.com"
+                    className={getInputClass(!!fieldErrors.customerEmail)}
+                    value={customerEmail}
+                    onChange={(e) => {
+                      setCustomerEmail(e.target.value);
+                      clearFieldError('customerEmail');
+                    }}
+                  />
+                </FormField>
+
+                <FormField label="Customer Phone No (WhatsApp)" required error={fieldErrors.customerPhone}>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="e.g. +91 9876543210"
+                    className={getInputClass(!!fieldErrors.customerPhone)}
+                    value={customerPhone}
+                    onChange={(e) => {
+                      setCustomerPhone(e.target.value);
+                      clearFieldError('customerPhone');
+                    }}
+                  />
+                </FormField>
               </div>
+            </div>
 
-              {/* Section 4: Delivery Agent & Schedule */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <Truck className="w-4 h-4 text-emerald-600" />
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Section 4: Delivery Agent & Schedule</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Agent Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Suresh Kumar"
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.deliveryAgentName
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={deliveryAgentName}
-                      onChange={(e) => {
-                        setDeliveryAgentName(e.target.value);
-                        if (fieldErrors.deliveryAgentName) setFieldErrors({ ...fieldErrors, deliveryAgentName: '' });
-                      }}
-                    />
-                    {fieldErrors.deliveryAgentName && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.deliveryAgentName}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Agent Phone (WhatsApp) <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="e.g. +91 9123456780"
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.deliveryAgentPhone
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={deliveryAgentPhone}
-                      onChange={(e) => {
-                        setDeliveryAgentPhone(e.target.value);
-                        if (fieldErrors.deliveryAgentPhone) setFieldErrors({ ...fieldErrors, deliveryAgentPhone: '' });
-                      }}
-                    />
-                    {fieldErrors.deliveryAgentPhone && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.deliveryAgentPhone}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Agent Email <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="agent@nexcore.com"
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.deliveryAgentEmail
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={deliveryAgentEmail}
-                      onChange={(e) => {
-                        setDeliveryAgentEmail(e.target.value);
-                        if (fieldErrors.deliveryAgentEmail) setFieldErrors({ ...fieldErrors, deliveryAgentEmail: '' });
-                      }}
-                    />
-                    {fieldErrors.deliveryAgentEmail && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.deliveryAgentEmail}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Delivery Date <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.deliveryDate
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={deliveryDate}
-                      onChange={(e) => {
-                        setDeliveryDate(e.target.value);
-                        if (fieldErrors.deliveryDate) setFieldErrors({ ...fieldErrors, deliveryDate: '' });
-                      }}
-                    />
-                    {fieldErrors.deliveryDate && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.deliveryDate}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Estimate Time (ETA) <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. 02:30 PM / 10 AM - 1 PM"
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none ${
-                        fieldErrors.estimateTime
-                          ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-                          : 'border-slate-300 focus:ring-emerald-500'
-                      }`}
-                      value={estimateTime}
-                      onChange={(e) => {
-                        setEstimateTime(e.target.value);
-                        if (fieldErrors.estimateTime) setFieldErrors({ ...fieldErrors, estimateTime: '' });
-                      }}
-                    />
-                    {fieldErrors.estimateTime && (
-                      <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {fieldErrors.estimateTime}
-                      </p>
-                    )}
-                  </div>
-                </div>
+            {/* Section 2: Address & Google Map */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <MapPin className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Section 2: Delivery Address</h3>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField label="Full Delivery Address" required error={fieldErrors.address}>
+                  <textarea
+                    required
+                    rows={2}
+                    placeholder="Door/Building No, Street Name, Area, City, State, Pincode"
+                    className={getInputClass(!!fieldErrors.address)}
+                    value={address}
+                    onChange={(e) => {
+                      setAddress(e.target.value);
+                      clearFieldError('address');
+                    }}
+                  />
+                </FormField>
 
-              {/* Section 5: Status & Submit */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                    {editingId ? 'Section 5: Update Status' : 'Section 5: Initial Status'}
-                  </h3>
+                <FormField
+                  label="Google Map Link (Optional)"
+                  error={fieldErrors.googleMapLink}
+                  hint="Included in WhatsApp messages as a 1-click navigation pin for agent and customer."
+                >
+                  <input
+                    type="url"
+                    placeholder="https://maps.google.com/?q=..."
+                    className={getInputClass(!!fieldErrors.googleMapLink)}
+                    value={googleMapLink}
+                    onChange={(e) => {
+                      setGoogleMapLink(e.target.value);
+                      clearFieldError('googleMapLink');
+                    }}
+                  />
+                </FormField>
+              </div>
+            </div>
+
+            {/* Section 3: Product Info */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <Package className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Section 3: Product Details</h3>
+              </div>
+              <FormField label="Product Name" required error={fieldErrors.productName}>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. NexCore Interactive Flat Panel 75-inch / Analyzer Kit"
+                  className={getInputClass(!!fieldErrors.productName)}
+                  value={productName}
+                  onChange={(e) => {
+                    setProductName(e.target.value);
+                    clearFieldError('productName');
+                  }}
+                />
+              </FormField>
+            </div>
+
+            {/* Section 4: Delivery Agent & Schedule */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <Truck className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Section 4: Delivery Agent & Schedule</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                <FormField label="Agent Name" required error={fieldErrors.deliveryAgentName}>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Suresh Kumar"
+                    className={getInputClass(!!fieldErrors.deliveryAgentName)}
+                    value={deliveryAgentName}
+                    onChange={(e) => {
+                      setDeliveryAgentName(e.target.value);
+                      clearFieldError('deliveryAgentName');
+                    }}
+                  />
+                </FormField>
+
+                <FormField label="Agent Phone (WhatsApp)" required error={fieldErrors.deliveryAgentPhone}>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="e.g. +91 9123456780"
+                    className={getInputClass(!!fieldErrors.deliveryAgentPhone)}
+                    value={deliveryAgentPhone}
+                    onChange={(e) => {
+                      setDeliveryAgentPhone(e.target.value);
+                      clearFieldError('deliveryAgentPhone');
+                    }}
+                  />
+                </FormField>
+
+                <FormField label="Agent Email" required error={fieldErrors.deliveryAgentEmail}>
+                  <input
+                    type="email"
+                    required
+                    placeholder="agent@nexcore.com"
+                    className={getInputClass(!!fieldErrors.deliveryAgentEmail)}
+                    value={deliveryAgentEmail}
+                    onChange={(e) => {
+                      setDeliveryAgentEmail(e.target.value);
+                      clearFieldError('deliveryAgentEmail');
+                    }}
+                  />
+                </FormField>
+
+                <FormField label="Delivery Date" required error={fieldErrors.deliveryDate}>
+                  <input
+                    type="date"
+                    required
+                    className={getInputClass(!!fieldErrors.deliveryDate)}
+                    value={deliveryDate}
+                    onChange={(e) => {
+                      setDeliveryDate(e.target.value);
+                      clearFieldError('deliveryDate');
+                    }}
+                  />
+                </FormField>
+
+                <FormField label="Estimate Time (ETA)" required error={fieldErrors.estimateTime}>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 02:30 PM / 10 AM - 1 PM"
+                    className={getInputClass(!!fieldErrors.estimateTime)}
+                    value={estimateTime}
+                    onChange={(e) => {
+                      setEstimateTime(e.target.value);
+                      clearFieldError('estimateTime');
+                    }}
+                  />
+                </FormField>
+              </div>
+            </div>
+
+            {/* Section 5: Status & Submit */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                  {editingId ? 'Section 5: Update Status' : 'Section 5: Initial Status'}
+                </h3>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="w-full sm:w-64">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Delivery Status
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-medium"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as DeliveryStatus)}
+                  >
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Dispatched">Dispatched</option>
+                    <option value="Out for Delivery">Out for Delivery</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="w-full sm:w-64">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Delivery Status
-                    </label>
-                    <select
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-medium"
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as DeliveryStatus)}
-                    >
-                      <option value="Scheduled">Scheduled</option>
-                      <option value="Dispatched">Dispatched</option>
-                      <option value="Out for Delivery">Out for Delivery</option>
-                      <option value="Delivered">Delivered</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
-                  </div>
 
-                  <div className="flex items-center gap-3 pt-2 sm:pt-0">
-                    {editingId && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCancelEdit}
-                        className="text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    )}
+                <div className="flex items-center gap-3 pt-2 sm:pt-0">
+                  {editingId && (
                     <Button
-                      type="submit"
-                      disabled={isCreating || isUpdating}
-                      className={`w-full sm:w-auto px-8 py-2.5 text-sm font-semibold text-white flex items-center justify-center gap-2 shadow-sm ${
-                        editingId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                      }`}
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelEdit}
+                      className="text-xs"
                     >
-                      {isCreating || isUpdating ? (
-                        <>
-                          <Spinner className="w-4 h-4 text-white" /> {editingId ? 'Updating & Sending WhatsApp...' : 'Creating & Sending WhatsApp...'}
-                        </>
-                      ) : (
-                        <>
-                          {editingId ? <Pencil className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
-                          {editingId ? 'Update Delivery & Send Updated WhatsApp' : 'Save & Send WhatsApp to Customer + Agent'}
-                        </>
-                      )}
+                      Cancel
                     </Button>
-                  </div>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={isCreating || isUpdating}
+                    className={`w-full sm:w-auto px-8 py-2.5 text-sm font-semibold text-white flex items-center justify-center gap-2 shadow-sm ${
+                      editingId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                    }`}
+                  >
+                    {isCreating || isUpdating ? (
+                      <>
+                        <Spinner className="w-4 h-4 text-white" /> {editingId ? 'Updating & Sending WhatsApp...' : 'Creating & Sending WhatsApp...'}
+                      </>
+                    ) : (
+                      <>
+                        {editingId ? <Pencil className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
+                        {editingId ? 'Update Delivery & Send Updated WhatsApp' : 'Submit'}
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
-            </form>
-          </Card>
-        </div>
-      )}
+            </div>
+          </form>
+        </Card>
+      </div>
 
       {/* Main Records Master Table */}
       <Card className="border border-slate-200">
@@ -988,23 +843,25 @@ export default function AdminDeliveriesPage() {
 
       {/* Modal: View Full Details */}
       {selectedDelivery && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <Truck className="w-5 h-5 text-emerald-400" />
                 <h3 className="font-bold text-base">Delivery Order Details</h3>
               </div>
               <button
                 onClick={() => setSelectedDelivery(null)}
-                className="text-slate-400 hover:text-white p-1 rounded"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-sm max-h-[80vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b pb-3">
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 text-sm overflow-y-auto flex-1">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <span className="text-xs font-semibold text-slate-500 uppercase">Current Status</span>
                 <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${STATUS_COLORS[selectedDelivery.status]?.bg} ${STATUS_COLORS[selectedDelivery.status]?.text}`}>
                   {selectedDelivery.status}
@@ -1016,29 +873,29 @@ export default function AdminDeliveriesPage() {
                 <p className="font-bold text-slate-900 text-base">{selectedDelivery.productName}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 border-t pt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-3">
                 <div>
                   <p className="text-xs font-semibold text-slate-400 uppercase">Customer Details</p>
                   <p className="font-medium text-slate-900">{selectedDelivery.customerName}</p>
                   <p className="text-xs text-emerald-600 font-medium">{selectedDelivery.customerPhone}</p>
-                  <p className="text-xs text-slate-500">{selectedDelivery.customerEmail}</p>
+                  <p className="text-xs text-slate-500 break-all">{selectedDelivery.customerEmail}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-400 uppercase">Delivery Agent</p>
                   <p className="font-medium text-slate-900">{selectedDelivery.deliveryAgentName}</p>
                   <p className="text-xs text-emerald-600 font-medium">{selectedDelivery.deliveryAgentPhone}</p>
-                  <p className="text-xs text-slate-500">{selectedDelivery.deliveryAgentEmail}</p>
+                  <p className="text-xs text-slate-500 break-all">{selectedDelivery.deliveryAgentEmail}</p>
                 </div>
               </div>
 
-              <div className="border-t pt-3">
+              <div className="border-t border-slate-100 pt-3">
                 <p className="text-xs font-semibold text-slate-400 uppercase">Schedule</p>
                 <p className="text-sm font-medium text-slate-800">
                   Date: {selectedDelivery.deliveryDate} | ETA: {selectedDelivery.estimateTime}
                 </p>
               </div>
 
-              <div className="border-t pt-3">
+              <div className="border-t border-slate-100 pt-3">
                 <p className="text-xs font-semibold text-slate-400 uppercase">Delivery Address</p>
                 <p className="text-sm text-slate-800 mt-0.5">{selectedDelivery.address}</p>
                 {selectedDelivery.googleMapLink && (
@@ -1053,14 +910,15 @@ export default function AdminDeliveriesPage() {
                 )}
               </div>
 
-              <div className="border-t pt-3 flex items-center justify-between text-xs text-slate-400">
+              <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-400">
                 <span>Created: {formatDate(selectedDelivery.createdAt)}</span>
                 <span>By: {selectedDelivery.adminId?.name || 'Admin'}</span>
               </div>
             </div>
 
-            <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            {/* Modal Footer */}
+            <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"

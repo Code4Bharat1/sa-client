@@ -15,19 +15,20 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { User, StatusHistory } from '@/types';
-import { Shield, MessageSquare, ExternalLink } from 'lucide-react';
+import { Shield, MessageSquare, ExternalLink, CheckCircle, X } from 'lucide-react';
 import Link from 'next/link';
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
-  'Open': ['Under Review', 'Assigned'],
-  'Under Review': ['Assigned', 'On Hold'],
-  'Assigned': ['Technician Visit Scheduled', 'In Progress', 'On Hold'],
-  'Technician Visit Scheduled': ['Technician Visit Scheduled', 'In Progress', 'On Hold', 'Assigned'],
-  'In Progress': ['Part Required', 'Resolved', 'On Hold'],
-  'Part Required': ['In Progress', 'On Hold'],
-  'On Hold': ['In Progress', 'Assigned'],
-  'Resolved': ['Customer Confirmation Pending'],
-  'Reopened': ['Under Review', 'Assigned'],
+  'Open': ['Under Review', 'Assigned', 'Closed'],
+  'Under Review': ['Assigned', 'On Hold', 'Closed'],
+  'Assigned': ['Technician Visit Scheduled', 'In Progress', 'On Hold', 'Closed'],
+  'Technician Visit Scheduled': ['Technician Visit Scheduled', 'In Progress', 'On Hold', 'Assigned', 'Closed'],
+  'In Progress': ['Part Required', 'Resolved', 'On Hold', 'Closed'],
+  'Part Required': ['In Progress', 'On Hold', 'Closed'],
+  'On Hold': ['In Progress', 'Assigned', 'Closed'],
+  'Resolved': ['Customer Confirmation Pending', 'Closed'],
+  'Customer Confirmation Pending': ['Closed', 'Reopened'],
+  'Reopened': ['Under Review', 'Assigned', 'Closed'],
 };
 
 export default function AdminTicketDetailPage() {
@@ -49,6 +50,9 @@ export default function AdminTicketDetailPage() {
   const [visitDate, setVisitDate] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
   const [selectedDeadline, setSelectedDeadline] = useState('');
+
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [closeRemarks, setCloseRemarks] = useState('');
 
   if (isLoading) return <Spinner className="py-16" />;
   if (!ticket) return <div className="text-center text-slate-500 py-16">Ticket not found</div>;
@@ -115,6 +119,22 @@ export default function AdminTicketDetailPage() {
     }
   };
 
+  const handleDirectClose = async () => {
+    try {
+      await updateStatus({
+        ticketId,
+        status: 'Closed',
+        remarks: closeRemarks.trim() || 'Closed by administrator',
+      }).unwrap();
+      toast.success('Ticket closed successfully');
+      setIsCloseModalOpen(false);
+      setCloseRemarks('');
+      refetch();
+    } catch (err: unknown) {
+      toast.error((err as { data?: { message?: string } })?.data?.message || 'Failed to close ticket');
+    }
+  };
+
   const getDeadlineStatus = () => {
     if (!ticket.resolutionDeadline) return null;
     if (ticket.status === 'Resolved' || ticket.status === 'Closed') return null;
@@ -143,16 +163,27 @@ export default function AdminTicketDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-2 border-b border-slate-200/60">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Shield className="w-4 h-4 text-gold-500" />
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Admin View</span>
           </div>
-          <h1 className="text-2xl font-bold text-primary-900 font-mono">{ticket.ticketId}</h1>
-          <p className="text-sm text-slate-500 mt-1">{ticket.issueCategory} · {ticket.panelSerialNumber}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-primary-900 font-mono tracking-tight whitespace-nowrap">{ticket.ticketId}</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 break-words">{ticket.issueCategory} · {ticket.panelSerialNumber}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {ticket.status !== 'Closed' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCloseModalOpen(true)}
+              className="text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300 flex items-center gap-1.5 text-xs py-1.5"
+            >
+              <CheckCircle className="w-3.5 h-3.5 text-rose-600" />
+              Close Ticket
+            </Button>
+          )}
           <StatusBadge status={ticket.status} />
           <PriorityBadge priority={ticket.priority} />
           {ticket.isOverdue && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">OVERDUE</span>}
@@ -204,9 +235,10 @@ export default function AdminTicketDetailPage() {
           <CardTitle className="mb-3">Attachments & Voice Notes</CardTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ticket.attachments.map((url, idx) => {
-              const isImage = url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png') || url.includes('.webp');
-              const isVideo = url.includes('.mp4');
-              const isAudio = url.includes('.webm') || url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('.m4a');
+              const lowerUrl = url.toLowerCase();
+              const isImage = /\.(jpe?g|png|webp|gif|svg|bmp|jfif)($|\?)/i.test(url) || lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp');
+              const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.includes('.webm');
+              const isAudio = lowerUrl.includes('.webm') || lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.ogg') || lowerUrl.includes('.m4a');
               
               return (
                 <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col justify-between">
@@ -408,6 +440,59 @@ export default function AdminTicketDetailPage() {
           })}
         </ol>
       </Card>
+
+      {/* Close Ticket Confirmation Modal */}
+      {isCloseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-rose-600" />
+                Close Ticket #{ticket.ticketId}
+              </h3>
+              <button
+                onClick={() => setIsCloseModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Are you sure you want to officially close this ticket? This will mark the ticket as closed, lock the chat, and notify the customer via email.
+            </p>
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Closing Remarks (Optional)
+              </label>
+              <textarea
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                rows={3}
+                placeholder="e.g. Issue resolved directly over phone call."
+                value={closeRemarks}
+                onChange={(e) => setCloseRemarks(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCloseModalOpen(false)}
+                disabled={statusLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDirectClose}
+                loading={statusLoading}
+                className="bg-rose-600 hover:bg-rose-700 text-white"
+              >
+                Confirm & Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
