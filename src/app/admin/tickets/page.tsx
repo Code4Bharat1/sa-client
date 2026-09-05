@@ -6,9 +6,11 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { AdminCreateTicketModal } from '@/components/admin/AdminCreateTicketModal';
+import { AdminCloseTicketModal } from '@/components/admin/AdminCloseTicketModal';
 import { formatDate } from '@/lib/utils';
+import { Ticket } from '@/types';
 import Link from 'next/link';
-import { Search, AlertTriangle, Plus } from 'lucide-react';
+import { Search, AlertTriangle, Plus, CheckCircle2 } from 'lucide-react';
 
 const STATUS_OPTS = [
   { value: '', label: 'All Statuses' },
@@ -27,6 +29,7 @@ export default function AdminTicketsPage() {
   const [priority, setPriority] = useState('');
   const [page, setPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [closeTicketTarget, setCloseTicketTarget] = useState<Ticket | null>(null);
 
   const { data, isLoading, refetch } = useGetTicketsQuery({ search, status, priority, page, limit: 25 });
   const tickets = data?.tickets || [];
@@ -48,6 +51,13 @@ export default function AdminTicketsPage() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreated={() => refetch()}
+      />
+
+      <AdminCloseTicketModal
+        isOpen={!!closeTicketTarget}
+        onClose={() => setCloseTicketTarget(null)}
+        ticket={closeTicketTarget}
+        onClosed={() => refetch()}
       />
 
       <div className="flex gap-3 flex-wrap">
@@ -73,14 +83,14 @@ export default function AdminTicketsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-100 text-left">
                   <tr>
-                    {['Ticket ID','Customer','Org','Category','Priority','Status','Technician','Deadline','Created'].map(h => (
+                    {['Ticket ID','Customer','Org','Category','Priority','Status','Technician','Deadline','Created','Action'].map(h => (
                       <th key={h} className="px-4 py-3 font-medium text-slate-500 text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {tickets.length === 0 ? (
-                    <tr><td colSpan={9} className="py-12 text-center text-slate-400">No tickets found</td></tr>
+                    <tr><td colSpan={10} className="py-12 text-center text-slate-400">No tickets found</td></tr>
                   ) : tickets.map((t) => {
                     const customer = typeof t.customerId === 'object' ? t.customerId : null;
                     const tech = typeof t.assignedTechnician === 'object' ? t.assignedTechnician : null;
@@ -121,6 +131,21 @@ export default function AdminTicketsPage() {
                           {deadlineText}
                         </td>
                         <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                        <td className="px-4 py-3 text-xs whitespace-nowrap">
+                          {t.status !== 'Closed' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCloseTicketTarget(t)}
+                              className="text-rose-600 border-rose-200 hover:bg-rose-50 text-[11px] py-1 px-2.5 h-auto flex items-center gap-1"
+                            >
+                              <CheckCircle2 className="w-3 h-3 text-rose-600" />
+                              Close
+                            </Button>
+                          ) : (
+                            <span className="text-slate-400 text-xs italic">Closed</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}

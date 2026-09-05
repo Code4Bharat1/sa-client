@@ -10,8 +10,9 @@ export interface TrainingAcknowledgmentItem {
   };
   clientName: string;
   institutionName: string;
-  trainersPresentCount: number;
-  traineeNames: string;
+  trainingDate?: string;
+  trainersPresentCount?: number;
+  traineeNames?: string;
   clientEmail: string;
   signatureImage: string;
   trainingImage: string;
@@ -22,8 +23,9 @@ export interface TrainingAcknowledgmentItem {
 export interface CreateAcknowledgmentPayload {
   clientName: string;
   institutionName: string;
-  trainersPresentCount: number;
-  traineeNames: string;
+  trainingDate?: string;
+  trainersPresentCount?: number;
+  traineeNames?: string;
   clientEmail: string;
   signatureImage: string;
   trainingImage: string;
@@ -47,6 +49,14 @@ export const acknowledgmentsApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Acknowledgment'],
     }),
+    updateAcknowledgmentDate: builder.mutation<{ success: boolean; data: TrainingAcknowledgmentItem }, { id: string; trainingDate: string }>({
+      query: ({ id, trainingDate }) => ({
+        url: `/acknowledgments/${id}/date`,
+        method: 'PATCH',
+        body: { trainingDate },
+      }),
+      invalidatesTags: ['Acknowledgment'],
+    }),
   }),
 });
 
@@ -54,4 +64,5 @@ export const {
   useGetAcknowledgmentsQuery,
   useGetAcknowledgmentQuery,
   useCreateAcknowledgmentMutation,
+  useUpdateAcknowledgmentDateMutation,
 } = acknowledgmentsApi;

@@ -15,8 +15,9 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { User, StatusHistory } from '@/types';
-import { Shield, MessageSquare, ExternalLink, CheckCircle, X } from 'lucide-react';
+import { Shield, MessageSquare, ExternalLink, CheckCircle, CheckCircle2, X, UserCheck, Calendar, Wrench, FileCheck, Building, Info } from 'lucide-react';
 import Link from 'next/link';
+import { AdminCloseTicketModal } from '@/components/admin/AdminCloseTicketModal';
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   'Open': ['Under Review', 'Assigned', 'Closed'],
@@ -52,7 +53,6 @@ export default function AdminTicketDetailPage() {
   const [selectedDeadline, setSelectedDeadline] = useState('');
 
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
-  const [closeRemarks, setCloseRemarks] = useState('');
 
   if (isLoading) return <Spinner className="py-16" />;
   if (!ticket) return <div className="text-center text-slate-500 py-16">Ticket not found</div>;
@@ -64,6 +64,11 @@ export default function AdminTicketDetailPage() {
 
   const handleStatusUpdate = async () => {
     if (!newStatus) { toast.error('Select a status'); return; }
+    if (newStatus === 'Closed') {
+      setIsCloseModalOpen(true);
+      setNewStatus('');
+      return;
+    }
     if (newStatus === 'Technician Visit Scheduled' && !visitDate) {
       toast.error('Please specify the scheduled visit date & time');
       return;
@@ -116,22 +121,6 @@ export default function AdminTicketDetailPage() {
       refetch();
     } catch (err: unknown) {
       toast.error((err as { data?: { message?: string } }).data?.message || 'Failed to update deadline');
-    }
-  };
-
-  const handleDirectClose = async () => {
-    try {
-      await updateStatus({
-        ticketId,
-        status: 'Closed',
-        remarks: closeRemarks.trim() || 'Closed by administrator',
-      }).unwrap();
-      toast.success('Ticket closed successfully');
-      setIsCloseModalOpen(false);
-      setCloseRemarks('');
-      refetch();
-    } catch (err: unknown) {
-      toast.error((err as { data?: { message?: string } })?.data?.message || 'Failed to close ticket');
     }
   };
 
@@ -382,7 +371,84 @@ export default function AdminTicketDetailPage() {
         </Card>
       </div>
 
-      {ticket.resolution && (
+      {ticket.closeDetails && (
+        <Card className="border-emerald-200 bg-emerald-50/20 shadow-sm">
+          <div className="flex items-center justify-between pb-3 border-b border-emerald-100 mb-4 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg">
+                <CheckCircle2 className="w-5 h-5" />
+              </span>
+              <div>
+                <CardTitle className="text-base text-emerald-950 font-bold">Ticket Closure Summary</CardTitle>
+                <p className="text-xs text-emerald-700">Official resolution record filed upon ticket closure</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Closed & Resolved
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-3">
+              <div>
+                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Client Name</dt>
+                <dd className="font-medium text-slate-900 mt-0.5">{ticket.closeDetails.clientName || customer?.name || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Client Institution / Organization</dt>
+                <dd className="font-medium text-slate-900 mt-0.5">{ticket.closeDetails.clientInstitution || customer?.organizationName || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue Date</dt>
+                <dd className="text-slate-800 mt-0.5">{ticket.closeDetails.issueDate ? formatDate(ticket.closeDetails.issueDate) : formatDate(ticket.createdAt)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Closure Date</dt>
+                <dd className="text-slate-800 mt-0.5 font-medium">{ticket.closeDetails.closureDate ? formatDate(ticket.closeDetails.closureDate) : (ticket.closedAt ? formatDate(ticket.closedAt) : '—')}</dd>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Technician Visit</dt>
+                <dd className="text-slate-800 mt-0.5 font-medium">{ticket.closeDetails.technicianVisit || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Client Acknowledgment</dt>
+                <dd className="text-slate-800 mt-0.5">{ticket.closeDetails.clientAcknowledgment || <span className="text-slate-400 italic">None provided</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Closed By</dt>
+                <dd className="text-slate-800 mt-0.5">
+                  {typeof ticket.closeDetails.closedBy === 'object' && ticket.closeDetails.closedBy !== null
+                    ? `${(ticket.closeDetails.closedBy as any).name} (${(ticket.closeDetails.closedBy as any).role})`
+                    : 'Administrator'}
+                </dd>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-emerald-100/80 space-y-3">
+            <div>
+              <dt className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Client Issue</dt>
+              <dd className="text-slate-800 bg-white/80 border border-slate-200 rounded-lg p-2.5 text-xs mt-1 whitespace-pre-wrap">
+                {ticket.closeDetails.clientIssue || ticket.description}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                What Was Solved / Problem Solution
+              </dt>
+              <dd className="text-slate-900 bg-white border border-emerald-300 rounded-lg p-3 text-xs mt-1 whitespace-pre-wrap font-medium shadow-sm">
+                {ticket.closeDetails.problemSolved || ticket.resolution?.workPerformed || '—'}
+              </dd>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {ticket.resolution && !ticket.closeDetails && (
         <Card>
           <CardTitle className="mb-3">Resolution</CardTitle>
           <dl className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -441,58 +507,13 @@ export default function AdminTicketDetailPage() {
         </ol>
       </Card>
 
-      {/* Close Ticket Confirmation Modal */}
-      {isCloseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-rose-600" />
-                Close Ticket #{ticket.ticketId}
-              </h3>
-              <button
-                onClick={() => setIsCloseModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 hover:bg-slate-100 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Are you sure you want to officially close this ticket? This will mark the ticket as closed, lock the chat, and notify the customer via email.
-            </p>
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Closing Remarks (Optional)
-              </label>
-              <textarea
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-                rows={3}
-                placeholder="e.g. Issue resolved directly over phone call."
-                value={closeRemarks}
-                onChange={(e) => setCloseRemarks(e.target.value)}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCloseModalOpen(false)}
-                disabled={statusLoading}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleDirectClose}
-                loading={statusLoading}
-                className="bg-rose-600 hover:bg-rose-700 text-white"
-              >
-                Confirm & Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Admin Close Ticket Modal with all 8 fields */}
+      <AdminCloseTicketModal
+        isOpen={isCloseModalOpen}
+        onClose={() => setIsCloseModalOpen(false)}
+        ticket={ticket}
+        onClosed={() => refetch()}
+      />
     </div>
   );
 }

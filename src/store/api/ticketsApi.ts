@@ -27,7 +27,25 @@ export const ticketsApi = apiSlice.injectEndpoints({
       query: (body) => ({ url: '/tickets', method: 'POST', body }),
       invalidatesTags: ['Ticket', 'KPI'],
     }),
-    updateTicketStatus: builder.mutation<{ success: boolean; data: Ticket }, { ticketId: string; status: string; remarks?: string; scheduledVisitDate?: string }>({
+    updateTicketStatus: builder.mutation<
+      { success: boolean; data: Ticket },
+      {
+        ticketId: string;
+        status: string;
+        remarks?: string;
+        scheduledVisitDate?: string;
+        closeDetails?: {
+          issueDate?: string;
+          clientName?: string;
+          clientInstitution?: string;
+          technicianVisit?: string;
+          clientAcknowledgment?: string;
+          clientIssue?: string;
+          problemSolved?: string;
+          closureDate?: string;
+        };
+      }
+    >({
       query: ({ ticketId, ...body }) => ({ url: `/tickets/${ticketId}/status`, method: 'PATCH', body }),
       invalidatesTags: ['Ticket', 'KPI'],
     }),

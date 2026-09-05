@@ -86,6 +86,18 @@ export interface Resolution {
   resolvedAt: string;
 }
 
+export interface CloseDetails {
+  issueDate?: string;
+  clientName?: string;
+  clientInstitution?: string;
+  technicianVisit?: string;
+  clientAcknowledgment?: string;
+  clientIssue?: string;
+  problemSolved?: string;
+  closureDate?: string;
+  closedBy?: { name: string; role: Role } | string;
+}
+
 export interface Feedback {
   rating: number;
   comment?: string;
@@ -112,6 +124,7 @@ export interface Ticket {
   assignedAt?: string;
   resolution?: Resolution;
   closedAt?: string;
+  closeDetails?: CloseDetails;
   feedback?: Feedback;
   reopenStatus: {
     isReopened: boolean;

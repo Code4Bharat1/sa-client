@@ -1,6 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { useGetAcknowledgmentsQuery, useCreateAcknowledgmentMutation } from '@/store/api/acknowledgmentsApi';
+import {
+  useGetAcknowledgmentsQuery,
+  useCreateAcknowledgmentMutation,
+  useUpdateAcknowledgmentDateMutation,
+} from '@/store/api/acknowledgmentsApi';
 import { SignatureCanvas } from '@/components/shared/SignatureCanvas';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -22,15 +26,18 @@ import {
   Shield,
   X,
   Loader2,
+  Calendar,
 } from 'lucide-react';
 
 export default function AdminAcknowledgmentsPage() {
   const { data, isLoading, refetch } = useGetAcknowledgmentsQuery();
   const [createAck, { isLoading: submitting }] = useCreateAcknowledgmentMutation();
+  const [updateAckDate, { isLoading: updatingDate }] = useUpdateAcknowledgmentDateMutation();
 
   // Form State
   const [clientName, setClientName] = useState('');
   const [institutionName, setInstitutionName] = useState('');
+  const [trainingDate, setTrainingDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [trainersCount, setTrainersCount] = useState<number | ''>(1);
   const [traineeNames, setTraineeNames] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -40,10 +47,32 @@ export default function AdminAcknowledgmentsPage() {
   // Search & Modal State
   const [search, setSearch] = useState('');
   const [selectedAck, setSelectedAck] = useState<any | null>(null);
+  const [editDate, setEditDate] = useState('');
+
+  const handleOpenInspection = (ack: any) => {
+    setSelectedAck(ack);
+    const initialDate = ack.trainingDate
+      ? new Date(ack.trainingDate).toISOString().split('T')[0]
+      : new Date(ack.createdAt).toISOString().split('T')[0];
+    setEditDate(initialDate);
+  };
+
+  const handleSaveDate = async () => {
+    if (!selectedAck || !editDate) return;
+    try {
+      const res = await updateAckDate({ id: selectedAck._id, trainingDate: editDate }).unwrap();
+      toast.success('Training date updated successfully');
+      setSelectedAck(res.data);
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update training date');
+    }
+  };
 
   const resetForm = () => {
     setClientName('');
     setInstitutionName('');
+    setTrainingDate(new Date().toISOString().split('T')[0]);
     setTrainersCount(1);
     setTraineeNames('');
     setClientEmail('');
@@ -75,8 +104,6 @@ export default function AdminAcknowledgmentsPage() {
 
     if (!clientName.trim()) { toast.error('Client Name is required'); return; }
     if (!institutionName.trim()) { toast.error('Institution Name is required'); return; }
-    if (!trainersCount || Number(trainersCount) <= 0) { toast.error('Please enter a valid number of trainers'); return; }
-    if (!traineeNames.trim()) { toast.error('Trainee Name(s) are required'); return; }
     if (!clientEmail.trim()) { toast.error('Client Email is required'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(clientEmail.trim())) { toast.error('Please enter a valid email address'); return; }
@@ -87,8 +114,9 @@ export default function AdminAcknowledgmentsPage() {
       await createAck({
         clientName: clientName.trim(),
         institutionName: institutionName.trim(),
-        trainersPresentCount: Number(trainersCount),
-        traineeNames: traineeNames.trim(),
+        trainingDate: trainingDate || new Date().toISOString().split('T')[0],
+        trainersPresentCount: trainersCount && Number(trainersCount) > 0 ? Number(trainersCount) : 1,
+        traineeNames: traineeNames.trim() ? traineeNames.trim() : undefined,
         clientEmail: clientEmail.trim(),
         signatureImage,
         trainingImage,
@@ -111,7 +139,7 @@ export default function AdminAcknowledgmentsPage() {
       ack.clientName.toLowerCase().includes(q) ||
       ack.institutionName.toLowerCase().includes(q) ||
       ack.clientEmail.toLowerCase().includes(q) ||
-      ack.traineeNames.toLowerCase().includes(q) ||
+      (ack.traineeNames ? ack.traineeNames.toLowerCase().includes(q) : false) ||
       techName.includes(q)
     );
   });
@@ -184,7 +212,7 @@ export default function AdminAcknowledgmentsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Client Representative Name *
+                Client Name *
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -201,7 +229,7 @@ export default function AdminAcknowledgmentsPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Institution / School Name *
+                Institution Name *
               </label>
               <div className="relative">
                 <Building className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -218,7 +246,7 @@ export default function AdminAcknowledgmentsPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Client Email (Receives PDF / Confirmation) *
+                Client Email *
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -235,15 +263,30 @@ export default function AdminAcknowledgmentsPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Trainers Present Count *
+                Training Date *
+              </label>
+              <div className="relative">
+                <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <input
+                  type="date"
+                  required
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  value={trainingDate}
+                  onChange={(e) => setTrainingDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                Trainers Present Count 
               </label>
               <div className="relative">
                 <Users className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <input
                   type="number"
                   min={1}
-                  required
-                  placeholder="e.g. 2"
+                  placeholder="1"
                   className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
                   value={trainersCount}
                   onChange={(e) => setTrainersCount(e.target.value === '' ? '' : Number(e.target.value))}
@@ -253,12 +296,11 @@ export default function AdminAcknowledgmentsPage() {
 
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Trainee Name(s) *
+                Trainee Name
               </label>
               <textarea
-                required
                 rows={2}
-                placeholder="e.g. Amit Verma (Physics Dept), Sneha Gupta (Maths Dept)"
+                placeholder="e.g. Amit Verma (Physics Dept), Sneha Gupta (Maths Dept) (optional)"
                 className="w-full p-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
                 value={traineeNames}
                 onChange={(e) => setTraineeNames(e.target.value)}
@@ -387,7 +429,7 @@ export default function AdminAcknowledgmentsPage() {
                 {filteredAcks.map((ack) => (
                   <tr key={ack._id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-4 whitespace-nowrap text-slate-600 font-medium">
-                      {formatDate(ack.createdAt)}
+                      {formatDate(ack.trainingDate || ack.createdAt)}
                     </td>
                     <td className="py-3 px-4 font-semibold text-slate-900">
                       {ack.institutionName}
@@ -396,14 +438,14 @@ export default function AdminAcknowledgmentsPage() {
                       <div className="font-medium text-slate-800">{ack.clientName}</div>
                       <div className="text-[11px] text-slate-400">{ack.clientEmail}</div>
                     </td>
-                    <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={ack.traineeNames}>
-                      {ack.traineeNames}
+                    <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={ack.traineeNames || 'None specified'}>
+                      {ack.traineeNames || <span className="text-slate-400 italic">None specified</span>}
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedAck(ack)}
+                        onClick={() => handleOpenInspection(ack)}
                         className="text-xs gap-1"
                       >
                         <Eye className="w-3.5 h-3.5" /> View
@@ -429,7 +471,7 @@ export default function AdminAcknowledgmentsPage() {
                   Training Acknowledgment Details
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Conducted on {formatDate(selectedAck.createdAt)}
+                  Conducted on {formatDate(selectedAck.trainingDate || selectedAck.createdAt)}
                 </p>
               </div>
               <button
@@ -453,20 +495,58 @@ export default function AdminAcknowledgmentsPage() {
                   <p className="text-xs text-slate-500">{selectedAck.clientEmail}</p>
                 </div>
                 <div>
-                  <span className="text-xs font-semibold text-slate-500 uppercase">Trainers Present</span>
-                  <p className="font-semibold text-slate-900 text-sm mt-0.5">{selectedAck.trainersPresentCount}</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-slate-500 uppercase">Training Date</span>
+                    {editDate !==
+                      (selectedAck.trainingDate
+                        ? new Date(selectedAck.trainingDate).toISOString().split('T')[0]
+                        : new Date(selectedAck.createdAt).toISOString().split('T')[0]) && (
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                        Unsaved
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      className="w-full text-xs font-semibold text-slate-900 border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                    />
+                    {editDate !==
+                      (selectedAck.trainingDate
+                        ? new Date(selectedAck.trainingDate).toISOString().split('T')[0]
+                        : new Date(selectedAck.createdAt).toISOString().split('T')[0]) && (
+                      <Button
+                        size="sm"
+                        disabled={updatingDate}
+                        onClick={handleSaveDate}
+                        className="h-8 text-xs px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 shadow-sm whitespace-nowrap"
+                      >
+                        {updatingDate ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <span className="text-xs font-semibold text-slate-500 uppercase">Conducted By</span>
-                  <p className="font-semibold text-slate-900 text-sm mt-0.5">
+                  <p className="font-semibold text-slate-900 text-sm mt-1">
                     {typeof selectedAck.technicianId === 'object' && selectedAck.technicianId?.name
                       ? selectedAck.technicianId.name
                       : 'Administrator'}
                   </p>
                 </div>
+                <div>
+                  <span className="text-xs font-semibold text-slate-500 uppercase">Trainers Present</span>
+                  <p className="font-semibold text-slate-900 text-sm mt-0.5">{selectedAck.trainersPresentCount || 1}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold text-slate-500 uppercase">Submission Timestamp</span>
+                  <p className="text-slate-600 text-xs mt-0.5">{formatDate(selectedAck.createdAt)}</p>
+                </div>
                 <div className="col-span-2">
                   <span className="text-xs font-semibold text-slate-500 uppercase">Trainee(s)</span>
-                  <p className="text-slate-800 text-xs mt-0.5">{selectedAck.traineeNames}</p>
+                  <p className="text-slate-800 text-xs mt-0.5">{selectedAck.traineeNames || <span className="text-slate-400 italic">None specified</span>}</p>
                 </div>
               </div>
 
