@@ -59,11 +59,12 @@ export default function NewTicketPage() {
       formData.append('file', file, filename || 'voice-note.webm');
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/tickets/upload`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tickets/upload`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
+      credentials: 'include',
       body: formData,
     });
 

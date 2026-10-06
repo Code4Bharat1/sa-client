@@ -1,7 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { useCreateTicketMutation } from '@/store/api/ticketsApi';
 import { useListTechniciansQuery } from '@/store/api/reportsApi';
+import { useRefreshTokenMutation } from '@/store/api/authApi';
+import { setAccessToken } from '@/features/auth/authSlice';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -36,7 +39,9 @@ export const AdminCreateTicketModal: React.FC<AdminCreateTicketModalProps> = ({
   onClose,
   onCreated,
 }) => {
+  const dispatch = useDispatch();
   const { accessToken } = useAuth();
+  const [refreshToken] = useRefreshTokenMutation();
   const [createTicket, { isLoading: isSubmitting }] = useCreateTicketMutation();
 
   // Customer details (direct input)
@@ -61,7 +66,7 @@ export const AdminCreateTicketModal: React.FC<AdminCreateTicketModalProps> = ({
   const { data: techData } = useListTechniciansQuery(undefined, { skip: !isOpen });
   const technicians = techData?.data || [];
 
-  // Upload single photo handler
+  // Upload single photo handler with automatic token refresh on 401
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -81,16 +86,38 @@ export const AdminCreateTicketModal: React.FC<AdminCreateTicketModalProps> = ({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/tickets/upload`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: formData,
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      let currentToken = accessToken;
+
+      let response = await fetch(`${baseUrl}/api/tickets/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+        },
+        credentials: 'include',
+        body: formData,
+      });
+
+      // If token expired, auto-refresh and retry once
+      if (response.status === 401) {
+        try {
+          const refreshRes = await refreshToken().unwrap();
+          if (refreshRes?.success && refreshRes?.data?.accessToken) {
+            currentToken = refreshRes.data.accessToken;
+            dispatch(setAccessToken(currentToken));
+            response = await fetch(`${baseUrl}/api/tickets/upload`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${currentToken}`,
+              },
+              credentials: 'include',
+              body: formData,
+            });
+          }
+        } catch {
+          // If refresh fails, fall through to check response.ok
         }
-      );
+      }
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));

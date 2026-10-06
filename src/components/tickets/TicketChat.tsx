@@ -171,7 +171,7 @@ export function TicketChat({ ticketId, ticketStatus, className = '' }: TicketCha
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/tickets/upload`,
+      `${process.env.NEXT_PUBLIC_API_URL || ''}/api/tickets/upload`,
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}` },

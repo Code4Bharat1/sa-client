@@ -8,7 +8,7 @@ import {
 import { RootState } from './store';
 import { setAccessToken, clearCredentials } from '../features/auth/authSlice';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5229';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: `${BASE_URL}/api`,

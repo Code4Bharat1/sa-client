@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { addNotification } from '../features/notifications/notificationsSlice';
 import { apiSlice } from '../store/apiSlice';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const useSSE = (accessToken: string | null) => {
   const dispatch = useDispatch();

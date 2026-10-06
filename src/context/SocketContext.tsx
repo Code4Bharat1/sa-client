@@ -25,7 +25,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const socketUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const newSocket = io(socketUrl, {
       auth: { token: accessToken },
       transports: ['websocket', 'polling'],

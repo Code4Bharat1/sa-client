@@ -7,7 +7,7 @@ import { Download, BarChart3, Star, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function AdminReportsPage() {
   const { data: kpiData } = useGetKPIsQuery();
