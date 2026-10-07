@@ -171,3 +171,27 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+export interface PanelInventory {
+  _id: string;
+  adminId: string;
+  vendorName: string;
+  vendorEmail?: string;
+  vendorPhone?: string;
+  purchaseDate?: string;
+  purchaseInvoiceNo?: string;
+  panelSerialNumber: string;
+  panelBrand?: string;
+  panelSize?: string;
+  warrantyPeriod?: string;
+  customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerOrganization?: string;
+  saleDate?: string;
+  saleInvoiceNo?: string;
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

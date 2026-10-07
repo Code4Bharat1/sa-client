@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   LayoutDashboard, Ticket, Users, BarChart3, Settings,
   ClipboardList, Wrench, Shield, LogOut, Menu, X,
-  PlusSquare, FileText, MessageSquare, FileCheck, Truck,
+  PlusSquare, FileText, MessageSquare, FileCheck, Truck, Boxes,
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleSidebar } from '@/features/ui/uiSlice';
@@ -28,6 +28,7 @@ const NAV_ITEMS = {
     { label: 'Live Support Chat', href: '/admin/chat', icon: MessageSquare },
     { label: 'Training Acknowledgments', href: '/admin/acknowledgments', icon: FileCheck },
     { label: 'Delivery Form', href: '/admin/deliveries', icon: Truck },
+    { label: 'Panel Inventory', href: '/admin/inventory', icon: Boxes },
     { label: 'Users', href: '/admin/users', icon: Users },
     { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
     { label: 'Audit Logs', href: '/admin/audit', icon: FileText },
