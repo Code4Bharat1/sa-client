@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useGetInventoryQuery,
   useDeleteInventoryMutation,
@@ -21,17 +21,29 @@ import {
   Calendar,
   Layers,
   ShieldCheck,
+  FileText,
+  Receipt,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export default function AdminInventoryPage() {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PanelInventory | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Debounce search query by 300ms to avoid spamming the backend
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const { data, isLoading, refetch } = useGetInventoryQuery({
-    search: search.trim() || undefined,
+    search: debouncedSearch.trim() || undefined,
     page,
     limit: 25,
   });
@@ -41,6 +53,8 @@ export default function AdminInventoryPage() {
   const items = data?.data?.items || [];
   const total = data?.data?.total || 0;
   const totalPages = data?.data?.totalPages || 1;
+  const totalVendors = data?.data?.totalVendors ?? new Set(items.map((i) => i.vendorName)).size;
+  const totalCustomers = data?.data?.totalCustomers ?? new Set(items.map((i) => i.customerName)).size;
 
   const handleOpenCreate = () => {
     setEditingItem(null);
@@ -52,6 +66,11 @@ export default function AdminInventoryPage() {
     setIsModalOpen(true);
   };
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+
   const handleDelete = async (id: string, serial: string) => {
     if (!window.confirm(`Are you sure you want to delete panel record "${serial}"?`)) {
       return;
@@ -60,6 +79,11 @@ export default function AdminInventoryPage() {
     try {
       await deleteInventory(id).unwrap();
       toast.success(`Panel ${serial} deleted successfully`);
+
+      // If this was the last item on the page and we're past page 1, roll back a page
+      if (items.length === 1 && page > 1) {
+        setPage((p) => Math.max(1, p - 1));
+      }
       refetch();
     } catch (err: unknown) {
       const msg =
@@ -109,7 +133,7 @@ export default function AdminInventoryPage() {
           <div>
             <p className="text-xs text-slate-500 font-medium">Vendor Purchases</p>
             <p className="text-xl font-bold text-slate-800">
-              {new Set(items.map((i) => i.vendorName)).size} Unique Vendors
+              {totalVendors} Unique Vendors
             </p>
           </div>
         </div>
@@ -121,7 +145,7 @@ export default function AdminInventoryPage() {
           <div>
             <p className="text-xs text-slate-500 font-medium">Customer Dispatches</p>
             <p className="text-xl font-bold text-slate-800">
-              {new Set(items.map((i) => i.customerName)).size} Customers
+              {totalCustomers} Customers
             </p>
           </div>
         </div>
@@ -133,7 +157,7 @@ export default function AdminInventoryPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white placeholder-slate-400 shadow-sm"
-            placeholder="Search by serial number, vendor, customer, school..."
+            placeholder="Search serial no, vendor, customer, phone, invoice..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -179,9 +203,9 @@ export default function AdminInventoryPage() {
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Monitor className="w-8 h-8 text-slate-300" />
                         <p className="text-sm font-medium text-slate-500">
-                          {search ? 'No panel records matched your search.' : 'No panel inventory records registered yet.'}
+                          {debouncedSearch ? 'No panel records matched your search.' : 'No panel inventory records registered yet.'}
                         </p>
-                        {!search && (
+                        {!debouncedSearch && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -206,6 +230,11 @@ export default function AdminInventoryPage() {
                           <span className="text-xs text-slate-600 mt-1">
                             {item.panelBrand || 'IFPD'} {item.panelSize ? `• ${item.panelSize}` : ''}
                           </span>
+                          {item.remarks && (
+                            <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded mt-1.5 line-clamp-1 max-w-[220px]" title={item.remarks}>
+                              Note: {item.remarks}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -216,6 +245,12 @@ export default function AdminInventoryPage() {
                             <Store className="w-3.5 h-3.5 text-slate-400" />
                             {item.vendorName}
                           </span>
+                          {item.purchaseInvoiceNo && (
+                            <span className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1 font-mono">
+                              <Receipt className="w-3 h-3 text-slate-400" />
+                              {item.purchaseInvoiceNo}
+                            </span>
+                          )}
                           {item.vendorEmail && (
                             <span className="text-[11px] text-slate-400 mt-0.5 truncate max-w-[180px]">
                               {item.vendorEmail}
@@ -241,6 +276,12 @@ export default function AdminInventoryPage() {
                             <span className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1 font-medium">
                               <Building className="w-3 h-3 text-slate-400" />
                               {item.customerOrganization}
+                            </span>
+                          )}
+                          {item.saleInvoiceNo && (
+                            <span className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1 font-mono">
+                              <FileSpreadsheet className="w-3 h-3 text-slate-400" />
+                              Bill: {item.saleInvoiceNo}
                             </span>
                           )}
                           {item.customerPhone && (
@@ -323,7 +364,7 @@ export default function AdminInventoryPage() {
       {/* Create / Edit Modal */}
       <InventoryModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         item={editingItem}
         onSuccess={() => refetch()}
       />

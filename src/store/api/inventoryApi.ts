@@ -15,6 +15,8 @@ export interface InventoryListResponse {
     page: number;
     limit: number;
     totalPages: number;
+    totalVendors?: number;
+    totalCustomers?: number;
   };
 }
 

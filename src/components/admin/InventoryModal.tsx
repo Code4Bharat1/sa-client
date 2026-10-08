@@ -51,6 +51,25 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   const [saleInvoiceNo, setSaleInvoiceNo] = useState('');
   const [remarks, setRemarks] = useState('');
 
+  // Helper to get local date string YYYY-MM-DD
+  const getTodayLocalDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (item && isOpen) {
       setVendorName(item.vendorName || '');
@@ -77,10 +96,11 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   }, [item, isOpen]);
 
   const resetForm = () => {
+    const today = getTodayLocalDate();
     setVendorName('');
     setVendorEmail('');
     setVendorPhone('');
-    setPurchaseDate(new Date().toISOString().split('T')[0]);
+    setPurchaseDate(today);
     setPurchaseInvoiceNo('');
 
     setPanelSerialNumber('');
@@ -92,13 +112,15 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     setCustomerEmail('');
     setCustomerPhone('');
     setCustomerOrganization('');
-    setSaleDate(new Date().toISOString().split('T')[0]);
+    setSaleDate(today);
     setSaleInvoiceNo('');
     setRemarks('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSubmitting) return;
 
     if (!vendorName.trim()) {
       toast.error('Please enter the vendor name');
@@ -123,6 +145,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       return;
     }
 
+    const cleanSerial = panelSerialNumber.trim().toUpperCase();
+
     const payload = {
       vendorName: vendorName.trim(),
       vendorEmail: vendorEmail.trim(),
@@ -130,7 +154,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       purchaseDate: purchaseDate.trim(),
       purchaseInvoiceNo: purchaseInvoiceNo.trim(),
 
-      panelSerialNumber: panelSerialNumber.trim(),
+      panelSerialNumber: cleanSerial,
       panelBrand: panelBrand.trim(),
       panelSize: panelSize.trim(),
       warrantyPeriod: warrantyPeriod.trim(),
@@ -165,7 +189,12 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
+    >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col border border-slate-200 overflow-hidden my-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
@@ -262,7 +291,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                   label="Panel Serial Number *"
                   placeholder="e.g. IFPD-2026-9921"
                   value={panelSerialNumber}
-                  onChange={(e) => setPanelSerialNumber(e.target.value)}
+                  onChange={(e) => setPanelSerialNumber(e.target.value.toUpperCase())}
                   required
                 />
               </div>
