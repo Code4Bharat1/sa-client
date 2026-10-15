@@ -12,6 +12,7 @@ import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
+import { BackButton } from '@/components/ui/BackButton';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { User, StatusHistory } from '@/types';
@@ -154,6 +155,7 @@ export default function AdminTicketDetailPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-2 border-b border-slate-200/60">
         <div>
+          <BackButton />
           <div className="flex items-center gap-2 mb-1">
             <Shield className="w-4 h-4 text-gold-500" />
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Admin View</span>

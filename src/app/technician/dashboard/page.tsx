@@ -6,6 +6,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { Wrench, Clock, CheckCircle, AlertTriangle, Calendar } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function TechnicianDashboard() {
   const { data: allTicketsData, isLoading: allLoading } = useGetTicketsQuery({ limit: 100 });
@@ -46,6 +47,7 @@ export default function TechnicianDashboard() {
 
   return (
     <div className="space-y-6">
+      <BackButton />
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary-800 flex items-center justify-center">
           <Wrench className="w-5 h-5 text-gold-400" />

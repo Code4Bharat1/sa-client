@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { CheckCircle, RefreshCw, Star } from 'lucide-react';
 import { User, StatusHistory } from '@/types';
+import { BackButton } from '@/components/ui/BackButton';
 
 import { TicketChat } from '@/components/tickets/TicketChat';
 
@@ -71,6 +72,7 @@ export default function CustomerTicketDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <BackButton />
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-2 border-b border-slate-200/60">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 font-mono tracking-tight whitespace-nowrap">{ticket.ticketId}</h1>

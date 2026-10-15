@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { Plus, Ticket, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
@@ -23,14 +24,17 @@ export default function CustomerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.name}</h1>
-          <p className="text-gray-500 text-sm mt-1">{user?.organizationName || 'IFPD Support Dashboard'}</p>
+      <div>
+        <BackButton />
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.name}</h1>
+            <p className="text-gray-500 text-sm mt-1">{user?.organizationName || 'IFPD Support Dashboard'}</p>
+          </div>
+          <Link href="/customer/tickets/new">
+            <Button><Plus className="w-4 h-4" /> Raise Ticket</Button>
+          </Link>
         </div>
-        <Link href="/customer/tickets/new">
-          <Button><Plus className="w-4 h-4" /> Raise Ticket</Button>
-        </Link>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

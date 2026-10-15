@@ -4,13 +4,14 @@ import { useGetTicketsQuery } from '@/store/api/ticketsApi';
 import { StatusBadge, PriorityBadge } from '@/components/shared/StatusBadge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
 import { Select } from '@/components/ui/Select';
 import { AdminCreateTicketModal } from '@/components/admin/AdminCreateTicketModal';
 import { AdminCloseTicketModal } from '@/components/admin/AdminCloseTicketModal';
 import { formatDate } from '@/lib/utils';
 import { Ticket } from '@/types';
 import Link from 'next/link';
-import { Search, AlertTriangle, Plus, CheckCircle2 } from 'lucide-react';
+import { Search, AlertTriangle, Plus, CheckCircle2, Ticket as TicketIcon } from 'lucide-react';
 
 const STATUS_OPTS = [
   { value: '', label: 'All Statuses' },
@@ -36,15 +37,26 @@ export default function AdminTicketsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-2xl font-bold text-primary-900">All Tickets</h1>
-        <Button
-          onClick={() => setIsCreateOpen(true)}
-          className="flex items-center gap-2 shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Create Ticket
-        </Button>
+      <div>
+        <BackButton />
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
+              <TicketIcon className="w-5 h-5 text-primary-700" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-primary-900">All Tickets</h1>
+              <p className="text-sm text-slate-500">Track, filter, and resolve support requests</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setIsCreateOpen(true)}
+            className="flex items-center gap-2 shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Create Ticket
+          </Button>
+        </div>
       </div>
 
       <AdminCreateTicketModal

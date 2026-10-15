@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
+import { BackButton } from '@/components/ui/BackButton';
 import { ISSUE_CATEGORIES } from '@/types';
 import { Paperclip, Mic, Square, Trash, Loader2 } from 'lucide-react';
 
@@ -197,7 +198,10 @@ export default function NewTicketPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Raise a Support Ticket</h1>
+      <div>
+        <BackButton />
+        <h1 className="text-2xl font-bold text-gray-900">Raise a Support Ticket</h1>
+      </div>
 
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 const STATUS_OPTS = [
   { value: '', label: 'All Statuses' },
@@ -22,6 +23,7 @@ export default function TechnicianTicketsPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton />
       <h1 className="text-2xl font-bold text-gray-900">My Assigned Tickets</h1>
 
       <Select options={STATUS_OPTS} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="w-56" />

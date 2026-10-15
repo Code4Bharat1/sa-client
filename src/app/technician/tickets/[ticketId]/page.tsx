@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { User, StatusHistory } from '@/types';
 import { Clock, Calendar, Shield, Play, FileText, Image as ImageIcon, Volume2, AlertTriangle } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 const TECH_TRANSITIONS: Record<string, string[]> = {
   'Assigned': ['Technician Visit Scheduled', 'In Progress'],
@@ -115,6 +116,7 @@ export default function TechnicianTicketDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <BackButton />
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-2 border-b border-slate-200/60">
         <div>

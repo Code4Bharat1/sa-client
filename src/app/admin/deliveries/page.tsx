@@ -1,11 +1,11 @@
 'use client';
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   useGetDeliveriesQuery,
   useCreateDeliveryMutation,
   useUpdateDeliveryMutation,
   useUpdateDeliveryStatusMutation,
-  useResendDeliveryWhatsAppMutation,
   useDeleteDeliveryMutation,
   DeliveryItem,
   DeliveryStatus,
@@ -13,12 +13,14 @@ import {
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { BackButton } from '@/components/ui/BackButton';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import {
   Truck,
   User,
   Mail,
+  Phone,
   MapPin,
   Package,
   Calendar,
@@ -32,9 +34,8 @@ import {
   Shield,
   RefreshCw,
   X,
-  MessageCircle,
-  SendHorizontal,
   Pencil,
+  ArrowLeft,
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<DeliveryStatus, { bg: string; text: string; border: string }> = {
@@ -79,6 +80,7 @@ function FormField({ label, required, error, hint, children }: FormFieldProps) {
 }
 
 export default function AdminDeliveriesPage() {
+  const router = useRouter();
   const formRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -112,7 +114,6 @@ export default function AdminDeliveriesPage() {
   const [createDelivery, { isLoading: isCreating }] = useCreateDeliveryMutation();
   const [updateDelivery, { isLoading: isUpdating }] = useUpdateDeliveryMutation();
   const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateDeliveryStatusMutation();
-  const [resendWhatsApp, { isLoading: isResending }] = useResendDeliveryWhatsAppMutation();
   const [deleteDelivery, { isLoading: isDeleting }] = useDeleteDeliveryMutation();
 
   const deliveries = data?.data || [];
@@ -261,10 +262,10 @@ export default function AdminDeliveriesPage() {
     try {
       if (editingId) {
         await updateDelivery({ id: editingId, ...payload }).unwrap();
-        toast.success('Delivery updated! Revised WhatsApp messages dispatched to Customer & Agent.');
+        toast.success('Delivery updated successfully!');
       } else {
         await createDelivery(payload).unwrap();
-        toast.success('Delivery created! WhatsApp messages sent to Customer & Agent.');
+        toast.success('Delivery created successfully!');
       }
 
       resetForm();
@@ -277,18 +278,9 @@ export default function AdminDeliveriesPage() {
   const handleStatusChange = async (id: string, newStatus: DeliveryStatus) => {
     try {
       await updateStatus({ id, status: newStatus }).unwrap();
-      toast.success(`Status updated to ${newStatus} & WhatsApp message sent`);
+      toast.success(`Status updated to ${newStatus}`);
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to update status');
-    }
-  };
-
-  const handleResendWhatsApp = async (id: string) => {
-    try {
-      await resendWhatsApp(id).unwrap();
-      toast.success('WhatsApp notifications resent to customer and agent!');
-    } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to resend WhatsApp message');
     }
   };
 
@@ -309,20 +301,16 @@ export default function AdminDeliveriesPage() {
   };
 
   const getInputClass = (hasError: boolean) =>
-    `w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
-      hasError
-        ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
-        : 'border-slate-300 focus:ring-emerald-500'
+    `w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:outline-none transition-colors ${hasError
+      ? 'border-rose-400 focus:ring-rose-400 bg-rose-50/20'
+      : 'border-slate-300 focus:ring-emerald-500'
     }`;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+    <div className="space-y-6 pb-12">
       {/* Header */}
       <div className="border-b border-slate-200 pb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield className="w-4 h-4 text-indigo-500" />
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Admin Portal</span>
-        </div>
+        <BackButton />
         <h1 className="text-2xl font-bold text-slate-900 font-mono flex items-center gap-2">
           <Truck className="w-6 h-6 text-primary-600" /> Delivery Form
         </h1>
@@ -379,7 +367,7 @@ export default function AdminDeliveriesPage() {
               {editingId ? (
                 <Pencil className="w-5 h-5 text-amber-300" />
               ) : (
-                <MessageCircle className="w-5 h-5 text-emerald-400" />
+                <Truck className="w-5 h-5 text-emerald-400" />
               )}
               <div>
                 <h2 className="text-base font-semibold text-white">
@@ -440,7 +428,7 @@ export default function AdminDeliveriesPage() {
                   />
                 </FormField>
 
-                <FormField label="Customer Phone No (WhatsApp)" required error={fieldErrors.customerPhone}>
+                <FormField label="Customer Phone Number" required error={fieldErrors.customerPhone}>
                   <input
                     type="tel"
                     required
@@ -480,7 +468,7 @@ export default function AdminDeliveriesPage() {
                 <FormField
                   label="Google Map Link (Optional)"
                   error={fieldErrors.googleMapLink}
-                  hint="Included in WhatsApp messages as a 1-click navigation pin for agent and customer."
+                  hint="Navigation link for delivery location (Google Maps)."
                 >
                   <input
                     type="url"
@@ -538,7 +526,7 @@ export default function AdminDeliveriesPage() {
                   />
                 </FormField>
 
-                <FormField label="Agent Phone (WhatsApp)" required error={fieldErrors.deliveryAgentPhone}>
+                <FormField label="Agent Phone Number" required error={fieldErrors.deliveryAgentPhone}>
                   <input
                     type="tel"
                     required
@@ -635,18 +623,17 @@ export default function AdminDeliveriesPage() {
                   <Button
                     type="submit"
                     disabled={isCreating || isUpdating}
-                    className={`w-full sm:w-auto px-8 py-2.5 text-sm font-semibold text-white flex items-center justify-center gap-2 shadow-sm ${
-                      editingId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                    }`}
+                    className={`w-full sm:w-auto px-8 py-2.5 text-sm font-semibold text-white flex items-center justify-center gap-2 shadow-sm ${editingId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                      }`}
                   >
                     {isCreating || isUpdating ? (
                       <>
-                        <Spinner className="w-4 h-4 text-white" /> {editingId ? 'Updating & Sending WhatsApp...' : 'Creating & Sending WhatsApp...'}
+                        <Spinner className="w-4 h-4 text-white" /> {editingId ? 'Updating Delivery...' : 'Saving Delivery...'}
                       </>
                     ) : (
                       <>
-                        {editingId ? <Pencil className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
-                        {editingId ? 'Update Delivery & Send Updated WhatsApp' : 'Submit'}
+                        {editingId ? <Pencil className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                        {editingId ? 'Update Delivery' : 'Submit'}
                       </>
                     )}
                   </Button>
@@ -721,15 +708,14 @@ export default function AdminDeliveriesPage() {
                   return (
                     <tr
                       key={item._id}
-                      className={`transition-colors ${
-                        isCurrentEditing ? 'bg-amber-50/60 ring-1 ring-amber-300' : 'hover:bg-slate-50/80'
-                      }`}
+                      className={`transition-colors ${isCurrentEditing ? 'bg-amber-50/60 ring-1 ring-amber-300' : 'hover:bg-slate-50/80'
+                        }`}
                     >
                       {/* Customer Info */}
                       <td className="py-3 px-3">
                         <p className="font-bold text-slate-900">{item.customerName}</p>
                         <p className="text-slate-500 text-[11px] flex items-center gap-1 mt-0.5">
-                          <MessageCircle className="w-3 h-3 text-emerald-600" /> {item.customerPhone}
+                          <Phone className="w-3 h-3 text-slate-400" /> {item.customerPhone}
                         </p>
                         <p className="text-slate-500 text-[11px] flex items-center gap-1">
                           <Mail className="w-3 h-3 text-slate-400" /> {item.customerEmail}
@@ -747,7 +733,7 @@ export default function AdminDeliveriesPage() {
                       <td className="py-3 px-3">
                         <p className="font-medium text-slate-800">{item.deliveryAgentName}</p>
                         <p className="text-slate-500 text-[11px] flex items-center gap-1 mt-0.5">
-                          <MessageCircle className="w-3 h-3 text-emerald-600" /> {item.deliveryAgentPhone}
+                          <Phone className="w-3 h-3 text-slate-400" /> {item.deliveryAgentPhone}
                         </p>
                         <p className="text-slate-500 text-[11px] flex items-center gap-1">
                           <Mail className="w-3 h-3 text-slate-400" /> {item.deliveryAgentEmail}
@@ -813,14 +799,6 @@ export default function AdminDeliveriesPage() {
                             className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleResendWhatsApp(item._id)}
-                            disabled={isResending}
-                            title="Resend WhatsApp Messages to Customer & Agent"
-                            className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
-                          >
-                            <SendHorizontal className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(item._id)}
@@ -930,14 +908,6 @@ export default function AdminDeliveriesPage() {
                   className="text-xs flex items-center gap-1 text-amber-700 hover:bg-amber-50 border-amber-300"
                 >
                   <Pencil className="w-3 h-3" /> Edit Delivery
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleResendWhatsApp(selectedDelivery._id)}
-                  className="text-xs flex items-center gap-1 text-emerald-700 hover:bg-emerald-50 border-emerald-300"
-                >
-                  <SendHorizontal className="w-3 h-3" /> Resend WhatsApp
                 </Button>
               </div>
               <Button

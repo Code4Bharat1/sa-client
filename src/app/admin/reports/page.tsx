@@ -3,6 +3,7 @@ import { useGetKPIsQuery, useGetTechnicianPerformanceQuery } from '@/store/api/r
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { BackButton } from '@/components/ui/BackButton';
 import { Download, BarChart3, Star, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
@@ -51,16 +52,19 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-primary-700" />
+      <div>
+        <BackButton />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-primary-700" />
+            </div>
+            <h1 className="text-2xl font-bold text-primary-900">Reports & Analytics</h1>
           </div>
-          <h1 className="text-2xl font-bold text-primary-900">Reports & Analytics</h1>
+          <Button variant="gold" onClick={downloadExcel}>
+            <Download className="w-4 h-4" /> Export Excel
+          </Button>
         </div>
-        <Button variant="gold" onClick={downloadExcel}>
-          <Download className="w-4 h-4" /> Export Excel
-        </Button>
       </div>
 
       {/* KPI Summary */}

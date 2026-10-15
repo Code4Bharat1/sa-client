@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Spinner } from '@/components/ui/Spinner';
 import { Card, CardTitle } from '@/components/ui/Card';
+import { BackButton } from '@/components/ui/BackButton';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '@/lib/utils';
-import { UserPlus, Search, X } from 'lucide-react';
+import { UserPlus, Search, X, Users } from 'lucide-react';
 
 const createSchema = z.object({
   name: z.string().min(2),
@@ -76,12 +77,23 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-primary-900">User Management</h1>
-        <Button onClick={() => setShowCreate((s) => !s)}>
-          {showCreate ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-          {showCreate ? 'Cancel' : 'Add User'}
-        </Button>
+      <div>
+        <BackButton />
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5 text-primary-700" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-primary-900">User Management</h1>
+              <p className="text-sm text-slate-500">Manage user accounts, roles, and access credentials</p>
+            </div>
+          </div>
+          <Button onClick={() => setShowCreate((s) => !s)}>
+            {showCreate ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+            {showCreate ? 'Cancel' : 'Add User'}
+          </Button>
+        </div>
       </div>
 
       {/* Create User Form */}

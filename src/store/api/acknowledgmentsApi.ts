@@ -14,8 +14,8 @@ export interface TrainingAcknowledgmentItem {
   trainersPresentCount?: number;
   traineeNames?: string;
   clientEmail: string;
-  signatureImage: string;
-  trainingImage: string;
+  signatureImage?: string;
+  trainingImage?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,8 +27,8 @@ export interface CreateAcknowledgmentPayload {
   trainersPresentCount?: number;
   traineeNames?: string;
   clientEmail: string;
-  signatureImage: string;
-  trainingImage: string;
+  signatureImage?: string;
+  trainingImage?: string;
 }
 
 export const acknowledgmentsApi = apiSlice.injectEndpoints({

@@ -5,6 +5,7 @@ import { useGetAdminChatThreadsQuery } from '@/store/api/messagesApi';
 import { TicketChat } from '@/components/tickets/TicketChat';
 import { StatusBadge, PriorityBadge } from '@/components/shared/StatusBadge';
 import { Spinner } from '@/components/ui/Spinner';
+import { BackButton } from '@/components/ui/BackButton';
 import { formatDate } from '@/lib/utils';
 import { Search, MessageSquare, ExternalLink, Ticket, Shield, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -37,17 +38,18 @@ export default function AdminChatPage() {
 
   return (
     <div className="space-y-4">
+      <BackButton />
       {/* Top Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary-600" /> Live Support Chat
-          </h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Direct real-time communication console with customers for active support tickets.
-          </p>
-        </div>
-        <button
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary-600" /> Live Support Chat
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Direct real-time communication console with customers for active support tickets.
+            </p>
+          </div>
+          <button
           onClick={() => refetch()}
           className="p-2 text-gray-500 hover:text-primary-600 border border-gray-200 rounded-lg bg-white shadow-sm hover:bg-gray-50 transition flex items-center gap-1.5 text-xs font-medium"
         >

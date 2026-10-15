@@ -6,6 +6,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { BackButton } from '@/components/ui/BackButton';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
@@ -27,9 +28,12 @@ export default function CustomerTicketsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">My Tickets</h1>
-        <Link href="/customer/tickets/new"><Button><Plus className="w-4 h-4" /> New Ticket</Button></Link>
+      <div>
+        <BackButton />
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">My Tickets</h1>
+          <Link href="/customer/tickets/new"><Button><Plus className="w-4 h-4" /> New Ticket</Button></Link>
+        </div>
       </div>
 
       <div className="flex gap-3 flex-wrap">

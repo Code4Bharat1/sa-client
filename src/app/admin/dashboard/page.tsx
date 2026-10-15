@@ -5,6 +5,7 @@ import { Card, CardTitle } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Spinner } from '@/components/ui/Spinner';
 import { Badge } from '@/components/ui/Badge';
+import { BackButton } from '@/components/ui/BackButton';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -25,14 +26,17 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary-800 flex items-center justify-center">
-          <Shield className="w-5 h-5 text-gold-400" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-primary-900">Admin Overview</h1>
-          <p className="text-sm text-slate-500">Platform-wide analytics and controls</p>
+      <div>
+        <BackButton />
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-800 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-gold-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-primary-900">Admin Overview</h1>
+            <p className="text-sm text-slate-500">Platform-wide analytics and controls</p>
+          </div>
         </div>
       </div>
 

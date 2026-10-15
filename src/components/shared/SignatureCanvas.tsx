@@ -7,9 +7,10 @@ interface SignatureCanvasProps {
   value?: string | null;
   onSignatureChange?: (dataUrl: string | null) => void;
   height?: number;
+  required?: boolean;
 }
 
-export function SignatureCanvas({ value, onSignatureChange, height = 180 }: SignatureCanvasProps) {
+export function SignatureCanvas({ value, onSignatureChange, height = 180, required = false }: SignatureCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -185,7 +186,7 @@ export function SignatureCanvas({ value, onSignatureChange, height = 180 }: Sign
       </div>
       <div className="flex justify-between items-center text-xs text-slate-500 px-1">
         <span className={isEmpty ? 'text-slate-400' : 'text-emerald-600 font-medium flex items-center gap-1'}>
-          {isEmpty ? 'Signature required' : '✓ Signature captured'}
+          {isEmpty ? (required ? 'Signature required' : 'Optional') : '✓ Signature captured'}
         </span>
         <Button
           type="button"

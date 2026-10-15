@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
 import toast from 'react-hot-toast';
 import { Settings, Bell, Clock, RefreshCw, Shield } from 'lucide-react';
 
@@ -122,17 +123,20 @@ export default function AdminConfigPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center">
-            <Settings className="w-5 h-5 text-primary-700" />
+      <div>
+        <BackButton />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-primary-700" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-primary-900">Platform Configuration</h1>
+              <p className="text-sm text-slate-500">Manage SLA rules, lifecycle settings and notifications</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-primary-900">Platform Configuration</h1>
-            <p className="text-sm text-slate-500">Manage SLA rules, lifecycle settings and notifications</p>
-          </div>
+          <Button variant="gold" onClick={handleSave}>Save Changes</Button>
         </div>
-        <Button variant="gold" onClick={handleSave}>Save Changes</Button>
       </div>
 
       {CONFIG_SECTIONS.map((section) => {

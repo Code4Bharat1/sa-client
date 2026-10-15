@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useGetAuditLogsQuery } from '@/store/api/reportsApi';
 import { Spinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
@@ -42,13 +43,16 @@ export default function AuditLogsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center">
-          <Shield className="w-5 h-5 text-primary-700" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-primary-900">Audit Logs</h1>
-          <p className="text-sm text-slate-500">Complete record of all admin and system actions</p>
+      <div>
+        <BackButton />
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-primary-700" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-primary-900">Audit Logs</h1>
+            <p className="text-sm text-slate-500">Complete record of all admin and system actions</p>
+          </div>
         </div>
       </div>
 

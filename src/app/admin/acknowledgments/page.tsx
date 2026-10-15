@@ -9,6 +9,7 @@ import { SignatureCanvas } from '@/components/shared/SignatureCanvas';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { BackButton } from '@/components/ui/BackButton';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import {
@@ -107,8 +108,6 @@ export default function AdminAcknowledgmentsPage() {
     if (!clientEmail.trim()) { toast.error('Client Email is required'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(clientEmail.trim())) { toast.error('Please enter a valid email address'); return; }
-    if (!trainingImage) { toast.error('Please upload a training session photo'); return; }
-    if (!signatureImage) { toast.error('Please capture digital signature on the pad'); return; }
 
     try {
       await createAck({
@@ -118,8 +117,8 @@ export default function AdminAcknowledgmentsPage() {
         trainersPresentCount: trainersCount && Number(trainersCount) > 0 ? Number(trainersCount) : 1,
         traineeNames: traineeNames.trim() ? traineeNames.trim() : undefined,
         clientEmail: clientEmail.trim(),
-        signatureImage,
-        trainingImage,
+        signatureImage: signatureImage || undefined,
+        trainingImage: trainingImage || undefined,
       }).unwrap();
 
       toast.success('Training Acknowledgment submitted! Email sent to client.');
@@ -145,17 +144,21 @@ export default function AdminAcknowledgmentsPage() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-16">
+    <div className="space-y-8 pb-16">
       {/* Header */}
       <div className="border-b border-slate-200 pb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield className="w-4 h-4 text-indigo-500" />
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Admin Portal</span>
+        <BackButton />
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
+            <FileCheck className="w-5 h-5 text-primary-700" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Training Acknowledgments</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Create, sign, and monitor all training completion acknowledgments with automatic client email notifications.
+            </p>
+          </div>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 font-mono">Training Acknowledgments</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Create, sign, and monitor all training completion acknowledgments with automatic client email notifications.
-        </p>
       </div>
 
       {/* 1. TOP: 3 KPI Metric Cards */}
@@ -279,7 +282,7 @@ export default function AdminAcknowledgmentsPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Trainers Present Count 
+                Trainers Present Count
               </label>
               <div className="relative">
                 <Users className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -313,7 +316,7 @@ export default function AdminAcknowledgmentsPage() {
             {/* Photo Upload */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
-                Training Session Photo *
+                Training Session Photo <span className="text-slate-400 font-normal normal-case">(optional)</span>
               </label>
               {trainingImage ? (
                 <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 flex items-center justify-center min-h-[180px]">
@@ -349,7 +352,7 @@ export default function AdminAcknowledgmentsPage() {
             {/* Digital Signature Pad */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
-                Client Digital Signature *
+                Client Digital Signature <span className="text-slate-400 font-normal normal-case">(optional)</span>
               </label>
               <div className="border border-slate-300 rounded-xl overflow-hidden bg-white shadow-inner p-2">
                 <SignatureCanvas
@@ -501,10 +504,10 @@ export default function AdminAcknowledgmentsPage() {
                       (selectedAck.trainingDate
                         ? new Date(selectedAck.trainingDate).toISOString().split('T')[0]
                         : new Date(selectedAck.createdAt).toISOString().split('T')[0]) && (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                        Unsaved
-                      </span>
-                    )}
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                          Unsaved
+                        </span>
+                      )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <input
@@ -517,15 +520,15 @@ export default function AdminAcknowledgmentsPage() {
                       (selectedAck.trainingDate
                         ? new Date(selectedAck.trainingDate).toISOString().split('T')[0]
                         : new Date(selectedAck.createdAt).toISOString().split('T')[0]) && (
-                      <Button
-                        size="sm"
-                        disabled={updatingDate}
-                        onClick={handleSaveDate}
-                        className="h-8 text-xs px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 shadow-sm whitespace-nowrap"
-                      >
-                        {updatingDate ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
-                      </Button>
-                    )}
+                        <Button
+                          size="sm"
+                          disabled={updatingDate}
+                          onClick={handleSaveDate}
+                          className="h-8 text-xs px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 shadow-sm whitespace-nowrap"
+                        >
+                          {updatingDate ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                        </Button>
+                      )}
                   </div>
                 </div>
                 <div>

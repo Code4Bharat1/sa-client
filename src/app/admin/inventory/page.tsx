@@ -8,6 +8,7 @@ import { PanelInventory } from '@/types';
 import { InventoryModal } from '@/components/admin/InventoryModal';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { BackButton } from '@/components/ui/BackButton';
 import toast from 'react-hot-toast';
 import {
   Search,
@@ -97,21 +98,24 @@ export default function AdminInventoryPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-primary-900 flex items-center gap-2">
-            <Layers className="w-6 h-6 text-primary-600" />
-            Panel Inventory & Sales
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Track vendor purchase origins, panel hardware serial numbers, and customer sales.
-          </p>
+      <div>
+        <BackButton />
+        {/* Top Header */}
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-primary-900 flex items-center gap-2">
+              <Layers className="w-6 h-6 text-primary-600" />
+              Panel Inventory & Sales
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Track vendor purchase origins, panel hardware serial numbers, and customer sales.
+            </p>
+          </div>
+          <Button onClick={handleOpenCreate} className="flex items-center gap-2 shadow-sm">
+            <Plus className="w-4 h-4" />
+            Register New Panel
+          </Button>
         </div>
-        <Button onClick={handleOpenCreate} className="flex items-center gap-2 shadow-sm">
-          <Plus className="w-4 h-4" />
-          Register New Panel
-        </Button>
       </div>
 
       {/* Summary KPI Cards */}
