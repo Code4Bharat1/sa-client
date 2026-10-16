@@ -29,8 +29,12 @@ export const reportsApi = apiSlice.injectEndpoints({
       query: (body) => ({ url: '/users', method: 'POST', body }),
       invalidatesTags: ['User'],
     }),
-    updateUser: builder.mutation<{ success: boolean; data: User }, { id: string; [key: string]: unknown }>({
+    updateUser: builder.mutation<{ success: boolean; data: User }, { id: string;[key: string]: unknown }>({
       query: ({ id, ...body }) => ({ url: `/users/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['User'],
+    }),
+    deleteUser: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({ url: `/users/${id}`, method: 'DELETE' }),
       invalidatesTags: ['User'],
     }),
   }),
@@ -45,4 +49,6 @@ export const {
   useListTechniciansQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
+  useDeleteUserMutation,
 } = reportsApi;
+

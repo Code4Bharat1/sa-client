@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useListUsersQuery, useCreateUserMutation, useUpdateUserMutation } from '@/store/api/reportsApi';
+import { useListUsersQuery, useCreateUserMutation, useUpdateUserMutation, useDeleteUserMutation } from '@/store/api/reportsApi';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,8 +12,9 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { BackButton } from '@/components/ui/BackButton';
 import toast from 'react-hot-toast';
-import { formatShortDate } from '@/lib/utils';
-import { UserPlus, Search, X, Users } from 'lucide-react';
+import { formatShortDate, cn } from '@/lib/utils';
+import { UserPlus, Search, X, Users, Trash2 } from 'lucide-react';
+import { User } from '@/types';
 
 const createSchema = z.object({
   name: z.string().min(2),
@@ -42,10 +43,12 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const { data, isLoading, refetch } = useListUsersQuery({ role, page, search });
   const [createUser, { isLoading: creating }] = useCreateUserMutation();
   const [updateUser] = useUpdateUserMutation();
+  const [deleteUser, { isLoading: deleting }] = useDeleteUserMutation();
   const users = data?.data || [];
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateForm>({
@@ -74,6 +77,35 @@ export default function AdminUsersPage() {
       toast.error('Failed to update user');
     }
   };
+
+  const handleActionChange = (u: User, action: string) => {
+    if (action === 'delete') {
+      setUserToDelete(u);
+    } else if (action === 'deactivate') {
+      if (u.isActive) {
+        toggleActive(u.id, true);
+      }
+    } else if (action === 'active') {
+      if (!u.isActive) {
+        toggleActive(u.id, false);
+      }
+    }
+  };
+
+  const onConfirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUser(userToDelete.id).unwrap();
+      toast.success('User deleted successfully');
+      setUserToDelete(null);
+      refetch();
+    } catch (err: unknown) {
+      toast.error(
+        (err as { data?: { message?: string } })?.data?.message || 'Failed to delete user'
+      );
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -170,13 +202,26 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatShortDate(u.createdAt)}</td>
                       <td className="px-4 py-3">
-                        <Button
-                          size="sm"
-                          variant={u.isActive ? 'danger' : 'secondary'}
-                          onClick={() => toggleActive(u.id, u.isActive)}
+                        <select
+                          value={u.isActive ? 'active' : 'deactivate'}
+                          onChange={(e) => handleActionChange(u, e.target.value)}
+                          className={cn(
+                            'text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all cursor-pointer shadow-sm',
+                            u.isActive
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 focus:ring-emerald-400'
+                              : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100 focus:ring-rose-400'
+                          )}
                         >
-                          {u.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
+                          <option value="active" className="text-slate-800 bg-white font-medium">
+                            Active
+                          </option>
+                          <option value="deactivate" className="text-slate-800 bg-white font-medium">
+                            Deactivate
+                          </option>
+                          <option value="delete" className="text-rose-600 bg-white font-semibold">
+                            Delete
+                          </option>
+                        </select>
                       </td>
                     </tr>
                   ))}
@@ -195,6 +240,70 @@ export default function AdminUsersPage() {
           </div>
         </>
       )}
+
+      {/* Delete User Confirmation Popup */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-100 overflow-hidden">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">
+                  Delete User Account
+                </h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  Are you sure you want to completely delete this user? This action cannot be undone and will permanently remove them from the database.
+                </p>
+              </div>
+
+              {/* User details card */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 mb-5 text-xs space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Customer ID</span>
+                  <span className="font-mono font-semibold text-slate-800">{userToDelete.customerId}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Name</span>
+                  <span className="font-semibold text-slate-900">{userToDelete.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Email</span>
+                  <span className="text-slate-700 truncate max-w-[220px]">{userToDelete.email}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Role</span>
+                  <span className="capitalize font-semibold text-slate-700">{userToDelete.role}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={deleting}
+                  onClick={() => setUserToDelete(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  className="flex-1"
+                  loading={deleting}
+                  onClick={onConfirmDelete}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
