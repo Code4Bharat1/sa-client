@@ -78,9 +78,11 @@ export default function NewTicketPage() {
     return data.url;
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const files = Array.from(e.target.files);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const processFiles = async (fileList: FileList | File[]) => {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
 
     const allowedTypes = [
       'image/jpeg', 'image/png', 'image/webp',
@@ -96,7 +98,7 @@ export default function NewTicketPage() {
           toast.error(`File "${file.name}" exceeds the 20MB limit.`);
           continue;
         }
-        if (!allowedTypes.includes(file.type)) {
+        if (file.type && !allowedTypes.includes(file.type)) {
           toast.error(`File type "${file.type || 'unknown'}" is not supported.`);
           continue;
         }
@@ -109,7 +111,46 @@ export default function NewTicketPage() {
       toast.error((err as Error).message || 'Failed to upload files');
     } finally {
       setUploading(false);
-      e.target.value = '';
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    await processFiles(e.target.files);
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploading) {
+      e.dataTransfer.dropEffect = 'copy';
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploading) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (uploading) return;
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await processFiles(e.dataTransfer.files);
     }
   };
 
@@ -266,10 +307,20 @@ export default function NewTicketPage() {
                 />
                 <label
                   htmlFor="media-uploader"
-                  className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-primary-500 bg-gray-50 hover:bg-gray-100 rounded-xl p-4 cursor-pointer transition text-center"
+                  onDragOver={handleDragOver}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all duration-200 text-center ${
+                    isDragging
+                      ? 'border-primary-500 bg-primary-50 ring-4 ring-primary-100 scale-[1.01]'
+                      : 'border-gray-300 hover:border-primary-500 bg-gray-50 hover:bg-gray-100'
+                  } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
                 >
-                  <Paperclip className="w-6 h-6 text-gray-400 mb-1" />
-                  <span className="text-sm font-semibold text-gray-700">Attach Media</span>
+                  <Paperclip className={`w-6 h-6 mb-1 ${isDragging ? 'text-primary-600 animate-bounce' : 'text-gray-400'}`} />
+                  <span className="text-sm font-semibold text-gray-700">
+                    {isDragging ? 'Drop Media Here to Upload' : 'Attach Media (Click or Drag & Drop)'}
+                  </span>
                   <span className="text-xs text-gray-500 mt-0.5">Photos or Videos (Max 20MB)</span>
                 </label>
               </div>

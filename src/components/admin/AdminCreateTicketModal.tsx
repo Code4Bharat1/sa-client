@@ -61,16 +61,14 @@ export const AdminCreateTicketModal: React.FC<AdminCreateTicketModalProps> = ({
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Query for technicians list
   const { data: techData } = useListTechniciansQuery(undefined, { skip: !isOpen });
   const technicians = techData?.data || [];
 
-  // Upload single photo handler with automatic token refresh on 401
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-
+  // Core single photo upload worker reusable for both file input and drag-and-drop
+  const uploadPhoto = async (file: File) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
       toast.error('Only image files (JPEG, PNG, WebP) are allowed');
@@ -127,12 +125,54 @@ export const AdminCreateTicketModal: React.FC<AdminCreateTicketModalProps> = ({
       const data = await response.json();
       setPhotoUrl(data.url);
       setPhotoName(file.name);
-      toast.success('Photo uploaded');
+      toast.success('Photo uploaded successfully');
     } catch (err: unknown) {
       toast.error((err as Error).message || 'Failed to upload photo');
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    await uploadPhoto(file);
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploading) {
+      e.dataTransfer.dropEffect = 'copy';
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploading) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (isUploading) return;
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    await uploadPhoto(files[0]);
   };
 
   const handleRemovePhoto = () => {
@@ -390,20 +430,36 @@ export const AdminCreateTicketModal: React.FC<AdminCreateTicketModalProps> = ({
               </div>
             ) : (
               <label
-                className={`border-2 border-dashed border-slate-300 hover:border-primary-400 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50/50 hover:bg-primary-50/20 ${
-                  isUploading ? 'opacity-50 pointer-events-none' : ''
-                }`}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
+                  isDragging
+                    ? 'border-primary-500 bg-primary-50 ring-4 ring-primary-100 scale-[1.01]'
+                    : 'border-slate-300 hover:border-primary-400 bg-slate-50/50 hover:bg-primary-50/20'
+                } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 {isUploading ? (
                   <div className="flex flex-col items-center py-2">
                     <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
                     <span className="text-xs text-slate-500 mt-2">Uploading photo...</span>
                   </div>
+                ) : isDragging ? (
+                  <div className="flex flex-col items-center py-2 text-center animate-pulse">
+                    <Upload className="w-7 h-7 text-primary-600 mb-1" />
+                    <span className="text-xs font-bold text-primary-700">
+                      Drop your photo here
+                    </span>
+                    <span className="text-[11px] text-primary-500 mt-0.5">
+                      Release to upload instantly
+                    </span>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center py-2 text-center">
                     <Upload className="w-6 h-6 text-slate-400 mb-1" />
                     <span className="text-xs font-medium text-slate-700">
-                      Click to upload 1 photo of the issue <span className="text-red-500 font-bold">*</span>
+                      Click to upload or drag & drop 1 photo <span className="text-red-500 font-bold">*</span>
                     </span>
                     <span className="text-[11px] text-slate-400 mt-0.5">
                       JPEG, PNG, or WebP (Max 20MB)

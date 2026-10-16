@@ -184,21 +184,83 @@ export function TicketChat({ ticketId, ticketStatus, className = '' }: TicketCha
     return resData.url;
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const files = Array.from(e.target.files);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  const uploadFiles = async (files: File[]) => {
+    if (!files || files.length === 0) return;
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/webp',
+      'video/mp4', 'application/pdf',
+      'audio/webm', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mpeg', 'audio/m4a', 'audio/x-m4a'
+    ];
+    const maxSizeBytes = 20 * 1024 * 1024; // 20MB
+
     setUploading(true);
     try {
       for (const file of files) {
+        if (file.size > maxSizeBytes) {
+          toast.error(`"${file.name}" exceeds the 20MB limit.`);
+          continue;
+        }
+        if (file.type && !allowedTypes.includes(file.type)) {
+          toast.error(`File type "${file.type}" is not supported.`);
+          continue;
+        }
         const url = await uploadFile(file);
         setAttachments((prev) => [...prev, url]);
+        toast.success(`Attached "${file.name}"`);
       }
-      toast.success('File uploaded');
-    } catch (err) {
+    } catch {
       toast.error('Failed to upload file');
     } finally {
       setUploading(false);
-      e.target.value = '';
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    await uploadFiles(Array.from(e.target.files));
+    e.target.value = '';
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isClosed || uploading) return;
+    dragCounterRef.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isClosed || uploading) return;
+    e.dataTransfer.dropEffect = 'copy';
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    if (isClosed || uploading) return;
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await uploadFiles(Array.from(e.dataTransfer.files));
     }
   };
 
@@ -299,7 +361,26 @@ export function TicketChat({ ticketId, ticketStatus, className = '' }: TicketCha
   }
 
   return (
-    <div className={`flex flex-col h-[520px] max-h-[520px] bg-white rounded-xl border border-gray-200 shadow-sm relative ${className}`}>
+    <div
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex flex-col h-[520px] max-h-[520px] bg-white rounded-xl border border-gray-200 shadow-sm relative overflow-hidden ${
+        isDragging ? 'ring-4 ring-primary-300 border-primary-500' : ''
+      } ${className}`}
+    >
+      {/* Drag & Drop Overlay */}
+      {isDragging && !isClosed && (
+        <div className="absolute inset-0 z-50 bg-primary-950/85 backdrop-blur-xs flex flex-col items-center justify-center p-6 pointer-events-none transition-all">
+          <div className="w-16 h-16 rounded-2xl bg-primary-800/90 border border-gold-500/50 flex items-center justify-center text-gold-400 shadow-xl mb-3 animate-bounce">
+            <Paperclip className="w-8 h-8" />
+          </div>
+          <p className="text-white font-bold text-base">Drop media to attach</p>
+          <p className="text-xs text-primary-200 mt-1">Photos, videos, or documents will be added to your message</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100 bg-slate-50/50 flex items-center justify-between">
         <div className="flex items-center gap-2">

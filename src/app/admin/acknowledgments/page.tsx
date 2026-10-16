@@ -81,11 +81,11 @@ export default function AdminAcknowledgmentsPage() {
     setTrainingImage(null);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
+  const [isPhotoDragging, setIsPhotoDragging] = useState(false);
+
+  const processTrainingPhoto = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Please upload a valid image file');
+      toast.error('Please upload a valid image file (JPEG, PNG, WebP)');
       return;
     }
     if (file.size > 20 * 1024 * 1024) {
@@ -96,8 +96,45 @@ export default function AdminAcknowledgmentsPage() {
     const reader = new FileReader();
     reader.onload = () => {
       setTrainingImage(reader.result as string);
+      toast.success('Session photo selected');
     };
     reader.readAsDataURL(file);
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    processTrainingPhoto(file);
+    e.target.value = '';
+  };
+
+  const handlePhotoDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsPhotoDragging(true);
+  };
+
+  const handlePhotoDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsPhotoDragging(true);
+  };
+
+  const handlePhotoDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsPhotoDragging(false);
+  };
+
+  const handlePhotoDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsPhotoDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processTrainingPhoto(e.dataTransfer.files[0]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -344,10 +381,24 @@ export default function AdminAcknowledgmentsPage() {
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 hover:border-primary-500 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100/80 transition min-h-[180px]">
-                  <Camera className="w-8 h-8 text-slate-400 mb-2" />
-                  <span className="text-sm font-semibold text-slate-700">Upload Session Photo</span>
-                  <span className="text-xs text-slate-400 mt-1">Click to capture or upload PNG/JPG (Max 20MB)</span>
+                <label
+                  onDragOver={handlePhotoDragOver}
+                  onDragEnter={handlePhotoDragEnter}
+                  onDragLeave={handlePhotoDragLeave}
+                  onDrop={handlePhotoDrop}
+                  className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 min-h-[180px] text-center ${
+                    isPhotoDragging
+                      ? 'border-primary-500 bg-primary-50 ring-4 ring-primary-100 scale-[1.01]'
+                      : 'border-slate-300 hover:border-primary-500 bg-slate-50 hover:bg-slate-100/80'
+                  }`}
+                >
+                  <Camera className={`w-8 h-8 mb-2 ${isPhotoDragging ? 'text-primary-600 animate-bounce' : 'text-slate-400'}`} />
+                  <span className="text-sm font-semibold text-slate-700">
+                    {isPhotoDragging ? 'Drop Session Photo Here' : 'Upload Session Photo'}
+                  </span>
+                  <span className="text-xs text-slate-400 mt-1">
+                    Click to capture or drag & drop PNG/JPG (Max 20MB)
+                  </span>
                   <input
                     type="file"
                     accept="image/*"
