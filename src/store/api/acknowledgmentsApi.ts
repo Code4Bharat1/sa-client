@@ -13,7 +13,7 @@ export interface TrainingAcknowledgmentItem {
   trainingDate?: string;
   trainersPresentCount?: number;
   traineeNames?: string;
-  clientEmail: string;
+  clientEmail?: string;
   signatureImage?: string;
   trainingImage?: string;
   createdAt: string;
@@ -26,7 +26,7 @@ export interface CreateAcknowledgmentPayload {
   trainingDate?: string;
   trainersPresentCount?: number;
   traineeNames?: string;
-  clientEmail: string;
+  clientEmail?: string;
   signatureImage?: string;
   trainingImage?: string;
 }
@@ -41,7 +41,7 @@ export const acknowledgmentsApi = apiSlice.injectEndpoints({
       query: (id) => `/acknowledgments/${id}`,
       providesTags: (_result, _err, id) => [{ type: 'Acknowledgment', id }],
     }),
-    createAcknowledgment: builder.mutation<{ success: boolean; data: TrainingAcknowledgmentItem }, CreateAcknowledgmentPayload>({
+    createAcknowledgment: builder.mutation<{ success: boolean; data: TrainingAcknowledgmentItem; emailSent?: boolean; emailError?: string }, CreateAcknowledgmentPayload>({
       query: (body) => ({
         url: '/acknowledgments',
         method: 'POST',

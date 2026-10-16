@@ -105,23 +105,33 @@ export default function AdminAcknowledgmentsPage() {
 
     if (!clientName.trim()) { toast.error('Client Name is required'); return; }
     if (!institutionName.trim()) { toast.error('Institution Name is required'); return; }
-    if (!clientEmail.trim()) { toast.error('Client Email is required'); return; }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(clientEmail.trim())) { toast.error('Please enter a valid email address'); return; }
+    if (clientEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(clientEmail.trim())) { toast.error('Please enter a valid email address'); return; }
+    }
 
     try {
-      await createAck({
+      const res = await createAck({
         clientName: clientName.trim(),
         institutionName: institutionName.trim(),
         trainingDate: trainingDate || new Date().toISOString().split('T')[0],
         trainersPresentCount: trainersCount && Number(trainersCount) > 0 ? Number(trainersCount) : 1,
         traineeNames: traineeNames.trim() ? traineeNames.trim() : undefined,
-        clientEmail: clientEmail.trim(),
+        clientEmail: clientEmail.trim() ? clientEmail.trim() : undefined,
         signatureImage: signatureImage || undefined,
         trainingImage: trainingImage || undefined,
       }).unwrap();
 
-      toast.success('Training Acknowledgment submitted! Email sent to client.');
+      if (clientEmail.trim()) {
+        if (res.emailSent) {
+          toast.success('Training Acknowledgment submitted! Email sent to client.');
+        } else {
+          toast.success('Training Acknowledgment saved successfully!');
+          toast.error(res.emailError ? `Email error: ${res.emailError}` : 'Could not deliver email to client.');
+        }
+      } else {
+        toast.success('Training Acknowledgment submitted successfully!');
+      }
       resetForm();
       refetch();
     } catch (err: any) {
@@ -137,7 +147,7 @@ export default function AdminAcknowledgmentsPage() {
     return (
       ack.clientName.toLowerCase().includes(q) ||
       ack.institutionName.toLowerCase().includes(q) ||
-      ack.clientEmail.toLowerCase().includes(q) ||
+      (ack.clientEmail ? ack.clientEmail.toLowerCase().includes(q) : false) ||
       (ack.traineeNames ? ack.traineeNames.toLowerCase().includes(q) : false) ||
       techName.includes(q)
     );
@@ -192,7 +202,7 @@ export default function AdminAcknowledgmentsPage() {
           <div>
             <p className="text-xs text-slate-500 font-medium">Total Clients Served</p>
             <p className="text-2xl font-bold text-slate-900">
-              {new Set(acknowledgments.map((a) => a.clientEmail)).size}
+              {new Set(acknowledgments.map((a) => a.clientEmail).filter(Boolean)).size || acknowledgments.length}
             </p>
           </div>
         </Card>
@@ -206,7 +216,7 @@ export default function AdminAcknowledgmentsPage() {
             New Training Acknowledgment Entry
           </CardTitle>
           <p className="text-xs text-slate-500 mt-1">
-            Fill out training completion details and capture client signature to automatically dispatch confirmation email.
+            Fill out training completion details. Client email, session photo, and digital signature are optional.
           </p>
         </div>
 
@@ -249,14 +259,13 @@ export default function AdminAcknowledgmentsPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Client Email *
+                Client Email <span className="text-slate-400 font-normal normal-case">(optional)</span>
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <input
                   type="email"
-                  required
-                  placeholder="e.g. principal@dpsschool.org"
+                  placeholder="e.g. principal@dpsschool.org (optional)"
                   className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
@@ -439,7 +448,7 @@ export default function AdminAcknowledgmentsPage() {
                     </td>
                     <td className="py-3 px-4 text-slate-600">
                       <div className="font-medium text-slate-800">{ack.clientName}</div>
-                      <div className="text-[11px] text-slate-400">{ack.clientEmail}</div>
+                      <div className="text-[11px] text-slate-400">{ack.clientEmail || '—'}</div>
                     </td>
                     <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={ack.traineeNames || 'None specified'}>
                       {ack.traineeNames || <span className="text-slate-400 italic">None specified</span>}
@@ -495,7 +504,7 @@ export default function AdminAcknowledgmentsPage() {
                 <div>
                   <span className="text-xs font-semibold text-slate-500 uppercase">Client Representative</span>
                   <p className="font-semibold text-slate-900 text-sm mt-0.5">{selectedAck.clientName}</p>
-                  <p className="text-xs text-slate-500">{selectedAck.clientEmail}</p>
+                  <p className="text-xs text-slate-500">{selectedAck.clientEmail || 'No email provided'}</p>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
