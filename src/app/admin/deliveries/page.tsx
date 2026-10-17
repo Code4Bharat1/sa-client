@@ -263,7 +263,7 @@ export default function AdminDeliveriesPage() {
       if (editingId) {
         const res = await updateDelivery({ id: editingId, ...payload }).unwrap();
         if (res.emailSent) {
-          toast.success(`Delivery updated! Confirmation email sent to ${payload.customerEmail}`);
+          toast.success(`Delivery updated! Notification emails sent to ${payload.customerEmail} & ${payload.deliveryAgentEmail}`);
         } else if (res.emailError) {
           toast.success('Delivery updated successfully!');
           toast.error(`Email delivery note: ${res.emailError}`);
@@ -273,7 +273,7 @@ export default function AdminDeliveriesPage() {
       } else {
         const res = await createDelivery(payload).unwrap();
         if (res.emailSent) {
-          toast.success(`Delivery created! Confirmation email sent to ${payload.customerEmail}`);
+          toast.success(`Delivery created! Confirmation emails sent to ${payload.customerEmail} & ${payload.deliveryAgentEmail}`);
         } else if (res.emailError) {
           toast.success('Delivery created successfully!');
           toast.error(`Email delivery note: ${res.emailError}`);
@@ -428,7 +428,12 @@ export default function AdminDeliveriesPage() {
                   />
                 </FormField>
 
-                <FormField label="Customer Email" required error={fieldErrors.customerEmail}>
+                <FormField
+                  label="Customer Email"
+                  required
+                  error={fieldErrors.customerEmail}
+                  hint="Delivery confirmation and schedule details will be emailed here."
+                >
                   <input
                     type="email"
                     required
@@ -554,7 +559,12 @@ export default function AdminDeliveriesPage() {
                   />
                 </FormField>
 
-                <FormField label="Agent Email" required error={fieldErrors.deliveryAgentEmail}>
+                <FormField
+                  label="Agent Email"
+                  required
+                  error={fieldErrors.deliveryAgentEmail}
+                  hint="Assignment details and destination link will be emailed here."
+                >
                   <input
                     type="email"
                     required
