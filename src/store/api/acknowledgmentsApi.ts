@@ -57,6 +57,24 @@ export const acknowledgmentsApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Acknowledgment'],
     }),
+    updateAcknowledgment: builder.mutation<
+      { success: boolean; message: string; data: TrainingAcknowledgmentItem },
+      { id: string } & Partial<CreateAcknowledgmentPayload>
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/acknowledgments/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Acknowledgment'],
+    }),
+    deleteAcknowledgment: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({
+        url: `/acknowledgments/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Acknowledgment'],
+    }),
   }),
 });
 
@@ -65,4 +83,6 @@ export const {
   useGetAcknowledgmentQuery,
   useCreateAcknowledgmentMutation,
   useUpdateAcknowledgmentDateMutation,
+  useUpdateAcknowledgmentMutation,
+  useDeleteAcknowledgmentMutation,
 } = acknowledgmentsApi;

@@ -4,6 +4,8 @@ import {
   useGetAcknowledgmentsQuery,
   useCreateAcknowledgmentMutation,
   useUpdateAcknowledgmentDateMutation,
+  useUpdateAcknowledgmentMutation,
+  useDeleteAcknowledgmentMutation,
 } from '@/store/api/acknowledgmentsApi';
 import { SignatureCanvas } from '@/components/shared/SignatureCanvas';
 import { Card, CardTitle } from '@/components/ui/Card';
@@ -28,12 +30,16 @@ import {
   X,
   Loader2,
   Calendar,
+  Pencil,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function AdminAcknowledgmentsPage() {
   const { data, isLoading, refetch } = useGetAcknowledgmentsQuery();
   const [createAck, { isLoading: submitting }] = useCreateAcknowledgmentMutation();
   const [updateAckDate, { isLoading: updatingDate }] = useUpdateAcknowledgmentDateMutation();
+  const [updateAck, { isLoading: updatingAck }] = useUpdateAcknowledgmentMutation();
+  const [deleteAck, { isLoading: deletingAck }] = useDeleteAcknowledgmentMutation();
 
   // Form State
   const [clientName, setClientName] = useState('');
@@ -50,12 +56,140 @@ export default function AdminAcknowledgmentsPage() {
   const [selectedAck, setSelectedAck] = useState<any | null>(null);
   const [editDate, setEditDate] = useState('');
 
+  // Form Validation Errors
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+
+  // Edit & Delete Modal States
+  const [ackToEdit, setAckToEdit] = useState<any | null>(null);
+  const [ackToDelete, setAckToDelete] = useState<any | null>(null);
+  const [editClientName, setEditClientName] = useState('');
+  const [editInstitutionName, setEditInstitutionName] = useState('');
+  const [editClientEmail, setEditClientEmail] = useState('');
+  const [editTrainingDate, setEditTrainingDate] = useState('');
+  const [editTrainersCount, setEditTrainersCount] = useState<number | ''>(1);
+  const [editTraineeNames, setEditTraineeNames] = useState('');
+
   const handleOpenInspection = (ack: any) => {
     setSelectedAck(ack);
     const initialDate = ack.trainingDate
       ? new Date(ack.trainingDate).toISOString().split('T')[0]
       : new Date(ack.createdAt).toISOString().split('T')[0];
     setEditDate(initialDate);
+  };
+
+  const handleOpenEdit = (ack: any) => {
+    setAckToEdit(ack);
+    setEditErrors({});
+    setEditClientName(ack.clientName || '');
+    setEditInstitutionName(ack.institutionName || '');
+    setEditClientEmail(ack.clientEmail || '');
+    setEditTrainingDate(
+      ack.trainingDate
+        ? new Date(ack.trainingDate).toISOString().split('T')[0]
+        : new Date(ack.createdAt).toISOString().split('T')[0]
+    );
+    setEditTrainersCount(ack.trainersPresentCount || 1);
+    setEditTraineeNames(ack.traineeNames || '');
+  };
+
+  const validateEditForm = (): boolean => {
+    const errs: Record<string, string> = {};
+    const missing: string[] = [];
+
+    if (!editClientName.trim()) {
+      errs.clientName = 'Client Name is required';
+      missing.push('Client Name');
+    } else if (editClientName.trim().length < 2) {
+      errs.clientName = 'Client Name must be at least 2 characters';
+    }
+
+    if (!editInstitutionName.trim()) {
+      errs.institutionName = 'Institution Name is required';
+      missing.push('Institution Name');
+    } else if (editInstitutionName.trim().length < 2) {
+      errs.institutionName = 'Institution Name must be at least 2 characters';
+    }
+
+    if (!editTrainingDate || !editTrainingDate.trim()) {
+      errs.trainingDate = 'Training Date is required';
+      missing.push('Training Date');
+    }
+
+    if (editClientEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(editClientEmail.trim())) {
+        errs.clientEmail = 'Please enter a valid email address';
+      }
+    }
+
+    setEditErrors(errs);
+
+    if (missing.length > 0) {
+      if (missing.length === 3) {
+        toast.error('Client Name, Institution Name, and Training Date are required');
+      } else {
+        toast.error(`${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} required`);
+      }
+      return false;
+    }
+
+    if (Object.keys(errs).length > 0) {
+      toast.error(Object.values(errs)[0]);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSaveEditAck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ackToEdit) return;
+    if (!validateEditForm()) return;
+
+    try {
+      await updateAck({
+        id: ackToEdit._id,
+        clientName: editClientName.trim(),
+        institutionName: editInstitutionName.trim(),
+        clientEmail: editClientEmail.trim(),
+        trainingDate: editTrainingDate.trim(),
+        trainersPresentCount: Number(editTrainersCount) || 1,
+        traineeNames: editTraineeNames.trim(),
+      }).unwrap();
+      toast.success('Training acknowledgment updated successfully');
+      setAckToEdit(null);
+      refetch();
+    } catch (err: any) {
+      const errorMsg =
+        err?.data?.message ||
+        err?.data?.error ||
+        (Array.isArray(err?.data?.errors) ? err.data.errors.map((e: any) => e.message || e).join(', ') : null) ||
+        err?.message ||
+        'Failed to update training acknowledgment';
+      toast.error(errorMsg);
+    }
+  };
+
+  const handleDeleteAck = async () => {
+    if (!ackToDelete) return;
+    try {
+      await deleteAck(ackToDelete._id).unwrap();
+      toast.success('Training acknowledgment deleted successfully');
+      setAckToDelete(null);
+      if (selectedAck?._id === ackToDelete._id) {
+        setSelectedAck(null);
+      }
+      refetch();
+    } catch (err: any) {
+      const errorMsg =
+        err?.data?.message ||
+        err?.data?.error ||
+        (Array.isArray(err?.data?.errors) ? err.data.errors.map((e: any) => e.message || e).join(', ') : null) ||
+        err?.message ||
+        'Failed to delete training acknowledgment';
+      toast.error(errorMsg);
+    }
   };
 
   const handleSaveDate = async () => {
@@ -79,24 +213,40 @@ export default function AdminAcknowledgmentsPage() {
     setClientEmail('');
     setSignatureImage(null);
     setTrainingImage(null);
+    setFormErrors({});
   };
 
   const [isPhotoDragging, setIsPhotoDragging] = useState(false);
 
   const processTrainingPhoto = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Please upload a valid image file (JPEG, PNG, WebP)');
+      const err = 'Please upload a valid image file (JPEG, PNG, WebP)';
+      setFormErrors((prev) => ({ ...prev, trainingImage: err }));
+      toast.error(err);
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('Image size must be under 20MB');
+    const maxSizeBytes = 20 * 1024 * 1024; // 20MB
+    if (file.size > maxSizeBytes) {
+      const fileSizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      const errMsg = `Training session photo exceeds the maximum size limit of 20MB (selected file: ${fileSizeMb}MB). Please upload an image under 20MB.`;
+      setFormErrors((prev) => ({
+        ...prev,
+        trainingImage: `Selected photo is ${fileSizeMb}MB. Maximum allowed size is 20MB.`,
+      }));
+      toast.error(errMsg, { duration: 5500 });
       return;
     }
+
+    setFormErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.trainingImage;
+      return copy;
+    });
 
     const reader = new FileReader();
     reader.onload = () => {
       setTrainingImage(reader.result as string);
-      toast.success('Session photo selected');
+      toast.success('Session photo selected successfully');
     };
     reader.readAsDataURL(file);
   };
@@ -137,21 +287,65 @@ export default function AdminAcknowledgmentsPage() {
     }
   };
 
+  const validateCreateForm = (): boolean => {
+    const errs: Record<string, string> = {};
+    const missing: string[] = [];
+
+    if (!clientName.trim()) {
+      errs.clientName = 'Client Name is required';
+      missing.push('Client Name');
+    } else if (clientName.trim().length < 2) {
+      errs.clientName = 'Client Name must be at least 2 characters';
+    }
+
+    if (!institutionName.trim()) {
+      errs.institutionName = 'Institution Name is required';
+      missing.push('Institution Name');
+    } else if (institutionName.trim().length < 2) {
+      errs.institutionName = 'Institution Name must be at least 2 characters';
+    }
+
+    if (!trainingDate || !trainingDate.trim()) {
+      errs.trainingDate = 'Training Date is required';
+      missing.push('Training Date');
+    }
+
+    if (clientEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(clientEmail.trim())) {
+        errs.clientEmail = 'Please enter a valid email address';
+      }
+    }
+
+    setFormErrors(errs);
+
+    if (missing.length > 0) {
+      if (missing.length === 3) {
+        toast.error('Client Name, Institution Name, and Training Date are required');
+      } else {
+        toast.error(`${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} required`);
+      }
+      return false;
+    }
+
+    if (Object.keys(errs).length > 0) {
+      toast.error(Object.values(errs)[0]);
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!clientName.trim()) { toast.error('Client Name is required'); return; }
-    if (!institutionName.trim()) { toast.error('Institution Name is required'); return; }
-    if (clientEmail.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(clientEmail.trim())) { toast.error('Please enter a valid email address'); return; }
-    }
+    if (!validateCreateForm()) return;
 
     try {
       const res = await createAck({
         clientName: clientName.trim(),
         institutionName: institutionName.trim(),
-        trainingDate: trainingDate || new Date().toISOString().split('T')[0],
+        trainingDate: trainingDate.trim(),
         trainersPresentCount: trainersCount && Number(trainersCount) > 0 ? Number(trainersCount) : 1,
         traineeNames: traineeNames.trim() ? traineeNames.trim() : undefined,
         clientEmail: clientEmail.trim() ? clientEmail.trim() : undefined,
@@ -172,7 +366,13 @@ export default function AdminAcknowledgmentsPage() {
       resetForm();
       refetch();
     } catch (err: any) {
-      toast.error(err?.data?.message || 'Failed to submit training acknowledgment');
+      const errorMsg =
+        err?.data?.message ||
+        err?.data?.error ||
+        (Array.isArray(err?.data?.errors) ? err.data.errors.map((e: any) => e.message || e).join(', ') : null) ||
+        err?.message ||
+        'Failed to submit training acknowledgment. Please verify required fields.';
+      toast.error(errorMsg);
     }
   };
 
@@ -257,41 +457,75 @@ export default function AdminAcknowledgmentsPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           {/* Institution & Client Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Client Name *
+                Client Name <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <User className={`w-4 h-4 absolute left-3 top-3 ${formErrors.clientName ? 'text-rose-400' : 'text-slate-400'}`} />
                 <input
                   type="text"
-                  required
                   placeholder="e.g. Dr. Rajesh Sharma"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:outline-none transition ${
+                    formErrors.clientName
+                      ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200 focus:border-rose-500'
+                      : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                  }`}
                   value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
+                  onChange={(e) => {
+                    setClientName(e.target.value);
+                    if (formErrors.clientName) {
+                      setFormErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.clientName;
+                        return copy;
+                      });
+                    }
+                  }}
                 />
               </div>
+              {formErrors.clientName && (
+                <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" /> {formErrors.clientName}
+                </p>
+              )}
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Institution Name *
+                Institution Name <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <Building className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Building className={`w-4 h-4 absolute left-3 top-3 ${formErrors.institutionName ? 'text-rose-400' : 'text-slate-400'}`} />
                 <input
                   type="text"
-                  required
                   placeholder="e.g. Delhi Public School"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:outline-none transition ${
+                    formErrors.institutionName
+                      ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200 focus:border-rose-500'
+                      : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                  }`}
                   value={institutionName}
-                  onChange={(e) => setInstitutionName(e.target.value)}
+                  onChange={(e) => {
+                    setInstitutionName(e.target.value);
+                    if (formErrors.institutionName) {
+                      setFormErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.institutionName;
+                        return copy;
+                      });
+                    }
+                  }}
                 />
               </div>
+              {formErrors.institutionName && (
+                <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" /> {formErrors.institutionName}
+                </p>
+              )}
             </div>
 
             <div>
@@ -299,31 +533,66 @@ export default function AdminAcknowledgmentsPage() {
                 Client Email <span className="text-slate-400 font-normal normal-case">(optional)</span>
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Mail className={`w-4 h-4 absolute left-3 top-3 ${formErrors.clientEmail ? 'text-rose-400' : 'text-slate-400'}`} />
                 <input
                   type="email"
                   placeholder="e.g. principal@dpsschool.org (optional)"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:outline-none transition ${
+                    formErrors.clientEmail
+                      ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200 focus:border-rose-500'
+                      : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                  }`}
                   value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
+                  onChange={(e) => {
+                    setClientEmail(e.target.value);
+                    if (formErrors.clientEmail) {
+                      setFormErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.clientEmail;
+                        return copy;
+                      });
+                    }
+                  }}
                 />
               </div>
+              {formErrors.clientEmail && (
+                <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" /> {formErrors.clientEmail}
+                </p>
+              )}
             </div>
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                Training Date *
+                Training Date <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Calendar className={`w-4 h-4 absolute left-3 top-3 ${formErrors.trainingDate ? 'text-rose-400' : 'text-slate-400'}`} />
                 <input
                   type="date"
-                  required
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:outline-none transition ${
+                    formErrors.trainingDate
+                      ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200 focus:border-rose-500'
+                      : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                  }`}
                   value={trainingDate}
-                  onChange={(e) => setTrainingDate(e.target.value)}
+                  onChange={(e) => {
+                    setTrainingDate(e.target.value);
+                    if (formErrors.trainingDate) {
+                      setFormErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.trainingDate;
+                        return copy;
+                      });
+                    }
+                  }}
                 />
               </div>
+              {formErrors.trainingDate && (
+                <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" /> {formErrors.trainingDate}
+                </p>
+              )}
             </div>
 
             <div>
@@ -373,7 +642,14 @@ export default function AdminAcknowledgmentsPage() {
                   />
                   <button
                     type="button"
-                    onClick={() => setTrainingImage(null)}
+                    onClick={() => {
+                      setTrainingImage(null);
+                      setFormErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy.trainingImage;
+                        return copy;
+                      });
+                    }}
                     className="absolute top-2 right-2 p-1.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition shadow"
                     title="Remove photo"
                   >
@@ -381,31 +657,46 @@ export default function AdminAcknowledgmentsPage() {
                   </button>
                 </div>
               ) : (
-                <label
-                  onDragOver={handlePhotoDragOver}
-                  onDragEnter={handlePhotoDragEnter}
-                  onDragLeave={handlePhotoDragLeave}
-                  onDrop={handlePhotoDrop}
-                  className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 min-h-[180px] text-center ${
-                    isPhotoDragging
-                      ? 'border-primary-500 bg-primary-50 ring-4 ring-primary-100 scale-[1.01]'
-                      : 'border-slate-300 hover:border-primary-500 bg-slate-50 hover:bg-slate-100/80'
-                  }`}
-                >
-                  <Camera className={`w-8 h-8 mb-2 ${isPhotoDragging ? 'text-primary-600 animate-bounce' : 'text-slate-400'}`} />
-                  <span className="text-sm font-semibold text-slate-700">
-                    {isPhotoDragging ? 'Drop Session Photo Here' : 'Upload Session Photo'}
-                  </span>
-                  <span className="text-xs text-slate-400 mt-1">
-                    Click to capture or drag & drop PNG/JPG (Max 20MB)
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoUpload}
-                  />
-                </label>
+                <>
+                  <label
+                    onDragOver={handlePhotoDragOver}
+                    onDragEnter={handlePhotoDragEnter}
+                    onDragLeave={handlePhotoDragLeave}
+                    onDrop={handlePhotoDrop}
+                    className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 min-h-[180px] text-center ${
+                      isPhotoDragging
+                        ? 'border-primary-500 bg-primary-50 ring-4 ring-primary-100 scale-[1.01]'
+                        : formErrors.trainingImage
+                        ? 'border-rose-400 bg-rose-50/30 hover:border-rose-500 hover:bg-rose-50/50'
+                        : 'border-slate-300 hover:border-primary-500 bg-slate-50 hover:bg-slate-100/80'
+                    }`}
+                  >
+                    <Camera className={`w-8 h-8 mb-2 ${
+                      isPhotoDragging
+                        ? 'text-primary-600 animate-bounce'
+                        : formErrors.trainingImage
+                        ? 'text-rose-400'
+                        : 'text-slate-400'
+                    }`} />
+                    <span className={`text-sm font-semibold ${formErrors.trainingImage ? 'text-rose-700' : 'text-slate-700'}`}>
+                      {isPhotoDragging ? 'Drop Session Photo Here' : 'Upload Session Photo'}
+                    </span>
+                    <span className={`text-xs mt-1 ${formErrors.trainingImage ? 'text-rose-500' : 'text-slate-400'}`}>
+                      Click to capture or drag & drop PNG/JPG (Max 20MB)
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                    />
+                  </label>
+                  {formErrors.trainingImage && (
+                    <p className="text-[11px] text-rose-500 font-medium mt-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {formErrors.trainingImage}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
@@ -485,7 +776,7 @@ export default function AdminAcknowledgmentsPage() {
                   <th className="py-3 px-4">Institution</th>
                   <th className="py-3 px-4">Client Contact</th>
                   <th className="py-3 px-4">Trainee(s)</th>
-                  <th className="py-3 px-4 text-right">Action</th>
+                  <th className="py-3 px-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -504,15 +795,33 @@ export default function AdminAcknowledgmentsPage() {
                     <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={ack.traineeNames || 'None specified'}>
                       {ack.traineeNames || <span className="text-slate-400 italic">None specified</span>}
                     </td>
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenInspection(ack)}
-                        className="text-xs gap-1"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> View
-                      </Button>
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(ack)}
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit Acknowledgment"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenInspection(ack)}
+                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAckToDelete(ack)}
+                          className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Acknowledgment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -648,6 +957,270 @@ export default function AdminAcknowledgmentsPage() {
             {/* Footer */}
             <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex justify-end">
               <Button onClick={() => setSelectedAck(null)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Acknowledgment Modal */}
+      {ackToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col border border-slate-200 overflow-hidden my-auto animate-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="bg-primary-900 text-white px-6 py-4 flex items-center justify-between shrink-0 border-b border-primary-800">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary-800 flex items-center justify-center text-gold-400 shrink-0">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">Edit Training Acknowledgment</h3>
+                  <p className="text-xs text-slate-300">Update session and representative details</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAckToEdit(null)}
+                disabled={updatingAck}
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-primary-800 transition disabled:opacity-50"
+                title="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveEditAck} noValidate className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Institution / Organization <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <Building className={`w-4 h-4 absolute left-3 top-2.5 ${editErrors.institutionName ? 'text-rose-400' : 'text-slate-400'}`} />
+                  <input
+                    type="text"
+                    value={editInstitutionName}
+                    onChange={(e) => {
+                      setEditInstitutionName(e.target.value);
+                      if (editErrors.institutionName) {
+                        setEditErrors((prev) => {
+                          const copy = { ...prev };
+                          delete copy.institutionName;
+                          return copy;
+                        });
+                      }
+                    }}
+                    placeholder="Enter institution name"
+                    className={`w-full pl-9 pr-3 py-2 text-xs border rounded-lg focus:outline-none bg-white transition ${
+                      editErrors.institutionName
+                        ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200 focus:border-rose-500'
+                        : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                    }`}
+                  />
+                </div>
+                {editErrors.institutionName && (
+                  <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" /> {editErrors.institutionName}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Client Representative Name <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <User className={`w-4 h-4 absolute left-3 top-2.5 ${editErrors.clientName ? 'text-rose-400' : 'text-slate-400'}`} />
+                  <input
+                    type="text"
+                    value={editClientName}
+                    onChange={(e) => {
+                      setEditClientName(e.target.value);
+                      if (editErrors.clientName) {
+                        setEditErrors((prev) => {
+                          const copy = { ...prev };
+                          delete copy.clientName;
+                          return copy;
+                        });
+                      }
+                    }}
+                    placeholder="Enter representative name"
+                    className={`w-full pl-9 pr-3 py-2 text-xs border rounded-lg focus:outline-none bg-white transition ${
+                      editErrors.clientName
+                        ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200 focus:border-rose-500'
+                        : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                    }`}
+                  />
+                </div>
+                {editErrors.clientName && (
+                  <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" /> {editErrors.clientName}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Client Email Address <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Mail className={`w-4 h-4 absolute left-3 top-2.5 ${editErrors.clientEmail ? 'text-rose-400' : 'text-slate-400'}`} />
+                  <input
+                    type="email"
+                    value={editClientEmail}
+                    onChange={(e) => {
+                      setEditClientEmail(e.target.value);
+                      if (editErrors.clientEmail) {
+                        setEditErrors((prev) => {
+                          const copy = { ...prev };
+                          delete copy.clientEmail;
+                          return copy;
+                        });
+                      }
+                    }}
+                    placeholder="client@institution.org"
+                    className={`w-full pl-9 pr-3 py-2 text-xs border rounded-lg focus:outline-none bg-white transition ${
+                      editErrors.clientEmail
+                        ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200 focus:border-rose-500'
+                        : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                    }`}
+                  />
+                </div>
+                {editErrors.clientEmail && (
+                  <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" /> {editErrors.clientEmail}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Training Date <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Calendar className={`w-4 h-4 absolute left-3 top-2.5 ${editErrors.trainingDate ? 'text-rose-400' : 'text-slate-400'}`} />
+                    <input
+                      type="date"
+                      value={editTrainingDate}
+                      onChange={(e) => {
+                        setEditTrainingDate(e.target.value);
+                        if (editErrors.trainingDate) {
+                          setEditErrors((prev) => {
+                            const copy = { ...prev };
+                            delete copy.trainingDate;
+                            return copy;
+                          });
+                        }
+                      }}
+                      className={`w-full pl-9 pr-3 py-2 text-xs border rounded-lg focus:outline-none bg-white transition ${
+                        editErrors.trainingDate
+                          ? 'border-rose-400 bg-rose-50/20 focus:ring-2 focus:ring-rose-200 focus:border-rose-500'
+                          : 'border-slate-300 focus:ring-2 focus:ring-primary-500'
+                      }`}
+                    />
+                  </div>
+                  {editErrors.trainingDate && (
+                    <p className="text-[11px] text-rose-500 font-medium mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" /> {editErrors.trainingDate}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Trainers Count <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Users className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="number"
+                      min={1}
+                      required
+                      value={editTrainersCount}
+                      onChange={(e) => setEditTrainersCount(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Trainee Name(s) <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={editTraineeNames}
+                  onChange={(e) => setEditTraineeNames(e.target.value)}
+                  placeholder="e.g. Dr. Rajesh Sharma, Priya Patel"
+                  className="w-full p-2.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none bg-white resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAckToEdit(null)}
+                  disabled={updatingAck}
+                  className="text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={updatingAck}
+                  className="bg-primary-900 hover:bg-primary-800 text-white text-xs font-semibold px-4 flex items-center gap-1.5 shadow-sm"
+                >
+                  {updatingAck ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Acknowledgment Confirmation Modal */}
+      {ackToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 border border-slate-200 animate-in zoom-in-95 duration-150">
+            <h3 className="text-base font-bold text-slate-900">Delete Training Acknowledgment</h3>
+            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+              Are you sure you want to delete the training record for{' '}
+              <span className="font-semibold text-slate-900">{ackToDelete.institutionName}</span> ({ackToDelete.clientName})?
+              This action cannot be undone.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAckToDelete(null)}
+                disabled={deletingAck}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDeleteAck}
+                disabled={deletingAck}
+                className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold"
+              >
+                {deletingAck ? 'Deleting...' : 'Delete Acknowledgment'}
+              </Button>
             </div>
           </div>
         </div>

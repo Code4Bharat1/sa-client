@@ -195,3 +195,20 @@ export interface PanelInventory {
   updatedAt: string;
 }
 
+export interface ClientItem {
+  _id: string;
+  adminId?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  clientName: string;
+  clientEmail: string;
+  clientMobile: string;
+  address: string;
+  date: string;
+  panelInfo: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

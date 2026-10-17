@@ -57,7 +57,10 @@ export const deliveriesApi = apiSlice.injectEndpoints({
       query: (id) => `/deliveries/${id}`,
       providesTags: (_result, _err, id) => [{ type: 'Delivery', id }],
     }),
-    createDelivery: builder.mutation<{ success: boolean; message: string; data: DeliveryItem }, CreateDeliveryPayload>({
+    createDelivery: builder.mutation<
+      { success: boolean; message: string; data: DeliveryItem; emailSent?: boolean; emailError?: string | null },
+      CreateDeliveryPayload
+    >({
       query: (body) => ({
         url: '/deliveries',
         method: 'POST',
@@ -65,7 +68,10 @@ export const deliveriesApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Delivery', id: 'LIST' }],
     }),
-    updateDelivery: builder.mutation<{ success: boolean; message: string; data: DeliveryItem }, { id: string } & CreateDeliveryPayload>({
+    updateDelivery: builder.mutation<
+      { success: boolean; message: string; data: DeliveryItem; emailSent?: boolean; emailError?: string | null },
+      { id: string } & CreateDeliveryPayload
+    >({
       query: ({ id, ...body }) => ({
         url: `/deliveries/${id}`,
         method: 'PUT',

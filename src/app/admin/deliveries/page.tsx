@@ -261,11 +261,25 @@ export default function AdminDeliveriesPage() {
 
     try {
       if (editingId) {
-        await updateDelivery({ id: editingId, ...payload }).unwrap();
-        toast.success('Delivery updated successfully!');
+        const res = await updateDelivery({ id: editingId, ...payload }).unwrap();
+        if (res.emailSent) {
+          toast.success(`Delivery updated! Confirmation email sent to ${payload.customerEmail}`);
+        } else if (res.emailError) {
+          toast.success('Delivery updated successfully!');
+          toast.error(`Email delivery note: ${res.emailError}`);
+        } else {
+          toast.success('Delivery updated successfully!');
+        }
       } else {
-        await createDelivery(payload).unwrap();
-        toast.success('Delivery created successfully!');
+        const res = await createDelivery(payload).unwrap();
+        if (res.emailSent) {
+          toast.success(`Delivery created! Confirmation email sent to ${payload.customerEmail}`);
+        } else if (res.emailError) {
+          toast.success('Delivery created successfully!');
+          toast.error(`Email delivery note: ${res.emailError}`);
+        } else {
+          toast.success('Delivery created successfully!');
+        }
       }
 
       resetForm();
